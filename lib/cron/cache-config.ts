@@ -169,6 +169,10 @@ export const v3SubgraphUrlOverride = (chainId: ChainId) => {
       return `https://api.goldsky.com/api/private/${process.env.GOLD_SKY_API_KEY}/subgraphs/uniswap-v3-monad/prod/gn`
     case ChainId.XLAYER:
       return `https://gateway.thegraph.com/api/subgraphs/id/${process.env.GRAPH_XLAYER_V3_ID}`
+    case ChainId.DOMA:
+      return `https://graph.doma.xyz/subgraphs/name/uniswap-v3-doma-mainnet`
+    case ChainId.DOMA_SEPOLIA:
+      return `https://graph-devnet.doma.xyz/subgraphs/name/uniswap-v3-doma-testnet`
     default:
       return undefined
   }
@@ -658,6 +662,34 @@ export const chainProtocols = [
       v2UntrackedUsdThreshold,
       v2SubgraphUrlOverride(ChainId.XLAYER),
       process.env.GRAPH_BEARER_TOKEN
+    ),
+  },
+  {
+    protocol: Protocol.V3,
+    chainId: ChainId.DOMA,
+    timeout: 90000,
+    provider: new V3SubgraphProvider(
+      ChainId.DOMA,
+      3,
+      90000,
+      true,
+      v3TrackedEthThreshold,
+      v3UntrackedUsdThreshold,
+      v3SubgraphUrlOverride(ChainId.DOMA)
+    ),
+  },
+    {
+    protocol: Protocol.V3,
+    chainId: ChainId.DOMA_SEPOLIA,
+    timeout: 90000,
+    provider: new V3SubgraphProvider(
+      ChainId.DOMA_SEPOLIA,
+      3,
+      90000,
+      true,
+      v3TrackedEthThreshold,
+      v3UntrackedUsdThreshold,
+      v3SubgraphUrlOverride(ChainId.DOMA_SEPOLIA)
     ),
   },
   // V4

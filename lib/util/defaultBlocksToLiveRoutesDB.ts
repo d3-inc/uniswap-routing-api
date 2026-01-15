@@ -21,6 +21,8 @@ export const DEFAULT_BLOCKS_TO_LIVE_ROUTES_DB: { [chain in ChainId]: number } = 
   [ChainId.BASE_SEPOLIA]: 30,
   [ChainId.ZORA_SEPOLIA]: 30,
   [ChainId.BLAST]: 30,
+  [ChainId.DOMA]: 30,
+  [ChainId.DOMA_SEPOLIA]: 30,
   // Note: Experiment with longer TTL
   // (12 minutes) / (2 seconds) = 360
   [ChainId.WORLDCHAIN]: 360,

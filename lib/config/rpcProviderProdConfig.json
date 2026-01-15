@@ -179,5 +179,23 @@
     "providerInitialWeights": [1],
     "providerUrls": ["UNIRPC_0"],
     "providerNames": ["UNIRPC"]
+  },
+  {
+    "chainId": 97476,
+    "useMultiProviderProb": 1,
+    "latencyEvaluationSampleProb": 0,
+    "healthCheckSampleProb": 0,
+    "providerInitialWeights": [1],
+    "providerUrls": ["QUICKNODE_97476"],
+    "providerNames": ["CONDUIT"]
+  },
+  {
+    "chainId": 97477,
+    "useMultiProviderProb": 1,
+    "latencyEvaluationSampleProb": 0,
+    "healthCheckSampleProb": 0,
+    "providerInitialWeights": [1],
+    "providerUrls": ["QUICKNODE_97477"],
+    "providerNames": ["CONDUIT"]
   }
 ]
