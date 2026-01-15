@@ -30,6 +30,10 @@ export function chainIdToNetworkName(networkId: ChainId): string {
       return 'unichain'
     case ChainId.SONEIUM:
       return 'soneium'
+    case ChainId.DOMA:
+      return 'doma'
+    case ChainId.DOMA_SEPOLIA:
+      return 'doma-sepolia'
     default:
       return 'ethereum'
   }
@@ -118,6 +122,12 @@ export function generateProviderUrl(key: string, value: string, chainId: number)
     }
     case 'QUICKNODE_480': {
       return `https://${tokens[0]}.worldchain-mainnet.quiknode.pro/${tokens[1]}`
+    }
+    case 'QUICKNODE_97476': {
+      return `https://rpc-testnet.doma.xyz`
+    }
+    case 'QUICKNODE_97477': {
+      return `https://rpc.doma.xyz`
     }
     // QuickNode RETH
     case 'QUICKNODERETH_1': {

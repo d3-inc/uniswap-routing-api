@@ -42,6 +42,8 @@ import {
   USDC_SONEIUM,
   USDC_MONAD,
   USDC_XLAYER,
+  USDCE_DOMA,
+  USDTEST_DOMA_SEPOLIA,
 } from '@uniswap/smart-order-router'
 import { ethers } from 'ethers'
 import NodeCache from 'node-cache'
@@ -162,6 +164,10 @@ export const USDC_ON = (chainId: ChainId): Token => {
       return USDC_MONAD
     case ChainId.XLAYER:
       return USDC_XLAYER
+    case ChainId.DOMA:
+      return USDCE_DOMA;
+    case ChainId.DOMA_SEPOLIA:
+      return USDTEST_DOMA_SEPOLIA;
     default:
       throw new Error(`Chain id: ${chainId} not supported`)
   }

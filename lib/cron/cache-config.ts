@@ -169,6 +169,10 @@ export const v3SubgraphUrlOverride = (chainId: ChainId) => {
       return `https://api.goldsky.com/api/private/${process.env.GOLD_SKY_API_KEY}/subgraphs/uniswap-v3-monad/prod/gn`
     case ChainId.XLAYER:
       return `https://gateway.thegraph.com/api/subgraphs/id/${process.env.GRAPH_XLAYER_V3_ID}`
+    case ChainId.DOMA:
+      return `https://graph.doma.xyz/subgraphs/name/uniswap-v3-doma-mainnet`
+    case ChainId.DOMA_SEPOLIA:
+      return `https://graph-devnet.doma.xyz/subgraphs/name/uniswap-v3-doma-testnet`
     default:
       return undefined
   }
@@ -234,672 +238,700 @@ export interface ChainProtocol {
 
 export const chainProtocols = [
   // V3.
+  // {
+  //   protocol: Protocol.V3,
+  //   chainId: ChainId.MAINNET,
+  //   timeout: 90000,
+  //   provider: new V3SubgraphProvider(
+  //     ChainId.MAINNET,
+  //     3,
+  //     90000,
+  //     true,
+  //     v3TrackedEthThreshold,
+  //     v3UntrackedUsdThreshold,
+  //     v3SubgraphUrlOverride(ChainId.MAINNET)
+  //   ),
+  // },
+  // {
+  //   protocol: Protocol.V3,
+  //   chainId: ChainId.ARBITRUM_ONE,
+  //   timeout: 90000,
+  //   provider: new V3SubgraphProvider(
+  //     ChainId.ARBITRUM_ONE,
+  //     5,
+  //     90000,
+  //     true,
+  //     v3TrackedEthThreshold,
+  //     v3UntrackedUsdThreshold,
+  //     v3SubgraphUrlOverride(ChainId.ARBITRUM_ONE)
+  //   ),
+  // },
+  // {
+  //   protocol: Protocol.V3,
+  //   chainId: ChainId.POLYGON,
+  //   timeout: 90000,
+  //   provider: new V3SubgraphProvider(
+  //     ChainId.POLYGON,
+  //     3,
+  //     90000,
+  //     true,
+  //     v3TrackedEthThreshold,
+  //     v3UntrackedUsdThreshold,
+  //     v3SubgraphUrlOverride(ChainId.POLYGON)
+  //   ),
+  // },
+  // // Waiting for Alchemy subgraph
+  // {
+  //   protocol: Protocol.V3,
+  //   chainId: ChainId.OPTIMISM,
+  //   timeout: 90000,
+  //   provider: new V3SubgraphProvider(
+  //     ChainId.OPTIMISM,
+  //     3,
+  //     90000,
+  //     true,
+  //     v3TrackedEthThreshold,
+  //     v3UntrackedUsdThreshold,
+  //     v3SubgraphUrlOverride(ChainId.OPTIMISM)
+  //   ),
+  // },
+  // {
+  //   protocol: Protocol.V3,
+  //   chainId: ChainId.CELO,
+  //   timeout: 90000,
+  //   provider: new V3SubgraphProvider(
+  //     ChainId.CELO,
+  //     3,
+  //     90000,
+  //     true,
+  //     v3TrackedEthThreshold,
+  //     v3UntrackedUsdThreshold,
+  //     v3SubgraphUrlOverride(ChainId.CELO)
+  //   ),
+  // },
+  // {
+  //   protocol: Protocol.V3,
+  //   chainId: ChainId.BNB,
+  //   timeout: 90000,
+  //   provider: new V3SubgraphProvider(
+  //     ChainId.BNB,
+  //     3,
+  //     90000,
+  //     true,
+  //     v3TrackedEthThreshold,
+  //     v3UntrackedUsdThreshold,
+  //     v3SubgraphUrlOverride(ChainId.BNB)
+  //   ),
+  // },
+  // {
+  //   protocol: Protocol.V3,
+  //   chainId: ChainId.AVALANCHE,
+  //   timeout: 90000,
+  //   provider: new V3SubgraphProvider(
+  //     ChainId.AVALANCHE,
+  //     3,
+  //     90000,
+  //     true,
+  //     v3TrackedEthThreshold,
+  //     v3UntrackedUsdThreshold,
+  //     v3SubgraphUrlOverride(ChainId.AVALANCHE)
+  //   ),
+  // },
+  // {
+  //   protocol: Protocol.V3,
+  //   chainId: ChainId.BASE,
+  //   timeout: 90000,
+  //   provider: new V3SubgraphProvider(
+  //     ChainId.BASE,
+  //     3,
+  //     900000, // base has more pools than other chains, so we need to increase the timeout
+  //     true,
+  //     v3BaseTrackedEthThreshold,
+  //     v3UntrackedUsdThreshold,
+  //     v3SubgraphUrlOverride(ChainId.BASE)
+  //   ),
+  // },
+  // {
+  //   protocol: Protocol.V3,
+  //   chainId: ChainId.BLAST,
+  //   timeout: 90000,
+  //   provider: new V3SubgraphProvider(
+  //     ChainId.BLAST,
+  //     3,
+  //     90000,
+  //     true,
+  //     v3TrackedEthThreshold,
+  //     v3UntrackedUsdThreshold,
+  //     v3SubgraphUrlOverride(ChainId.BLAST)
+  //   ),
+  // },
+  // {
+  //   protocol: Protocol.V3,
+  //   chainId: ChainId.UNICHAIN,
+  //   timeout: 90000,
+  //   provider: new V3SubgraphProvider(
+  //     ChainId.UNICHAIN,
+  //     3,
+  //     90000,
+  //     true,
+  //     v3TrackedEthThreshold,
+  //     v3UntrackedUsdThreshold,
+  //     v3SubgraphUrlOverride(ChainId.UNICHAIN)
+  //   ),
+  // },
+  // {
+  //   protocol: Protocol.V3,
+  //   chainId: ChainId.WORLDCHAIN,
+  //   timeout: 90000,
+  //   provider: new V3SubgraphProvider(
+  //     ChainId.WORLDCHAIN,
+  //     3,
+  //     90000,
+  //     true,
+  //     v3TrackedEthThreshold,
+  //     v3UntrackedUsdThreshold,
+  //     v3SubgraphUrlOverride(ChainId.WORLDCHAIN)
+  //   ),
+  // },
+  // {
+  //   protocol: Protocol.V3,
+  //   chainId: ChainId.ZORA,
+  //   timeout: 90000,
+  //   provider: new V3SubgraphProvider(
+  //     ChainId.ZORA,
+  //     3,
+  //     360000, // zora has more pools than other chains, so we need to increase the timeout
+  //     true,
+  //     v3TrackedEthThreshold,
+  //     v3UntrackedUsdThreshold,
+  //     v3SubgraphUrlOverride(ChainId.ZORA)
+  //   ),
+  // },
+  // {
+  //   protocol: Protocol.V3,
+  //   chainId: ChainId.SONEIUM,
+  //   timeout: 90000,
+  //   provider: new V3SubgraphProvider(
+  //     ChainId.SONEIUM,
+  //     3,
+  //     90000,
+  //     true,
+  //     v3TrackedEthThreshold,
+  //     v3UntrackedUsdThreshold,
+  //     v3SubgraphUrlOverride(ChainId.SONEIUM)
+  //   ),
+  // },
+  // {
+  //   protocol: Protocol.V3,
+  //   chainId: ChainId.MONAD,
+  //   timeout: 90000,
+  //   provider: new V3SubgraphProvider(
+  //     ChainId.MONAD,
+  //     3,
+  //     90000,
+  //     true,
+  //     v3TrackedEthThreshold,
+  //     v3UntrackedUsdThreshold,
+  //     v3SubgraphUrlOverride(ChainId.MONAD),
+  //     process.env.GOLD_SKY_BEARER_TOKEN
+  //   ),
+  // },
+  // {
+  //   protocol: Protocol.V3,
+  //   chainId: ChainId.XLAYER,
+  //   timeout: 90000,
+  //   provider: new V3SubgraphProvider(
+  //     ChainId.XLAYER,
+  //     3,
+  //     90000,
+  //     true,
+  //     v3TrackedEthThreshold,
+  //     v3UntrackedUsdThreshold,
+  //     v3SubgraphUrlOverride(ChainId.XLAYER),
+  //     process.env.GRAPH_BEARER_TOKEN
+  //   ),
+  // },
   {
     protocol: Protocol.V3,
-    chainId: ChainId.MAINNET,
+    chainId: ChainId.DOMA,
     timeout: 90000,
     provider: new V3SubgraphProvider(
-      ChainId.MAINNET,
+      ChainId.DOMA,
       3,
       90000,
       true,
       v3TrackedEthThreshold,
       v3UntrackedUsdThreshold,
-      v3SubgraphUrlOverride(ChainId.MAINNET)
+      v3SubgraphUrlOverride(ChainId.DOMA)
     ),
   },
-  {
+    {
     protocol: Protocol.V3,
-    chainId: ChainId.ARBITRUM_ONE,
+    chainId: ChainId.DOMA_SEPOLIA,
     timeout: 90000,
     provider: new V3SubgraphProvider(
-      ChainId.ARBITRUM_ONE,
-      5,
-      90000,
-      true,
-      v3TrackedEthThreshold,
-      v3UntrackedUsdThreshold,
-      v3SubgraphUrlOverride(ChainId.ARBITRUM_ONE)
-    ),
-  },
-  {
-    protocol: Protocol.V3,
-    chainId: ChainId.POLYGON,
-    timeout: 90000,
-    provider: new V3SubgraphProvider(
-      ChainId.POLYGON,
+      ChainId.DOMA_SEPOLIA,
       3,
       90000,
       true,
       v3TrackedEthThreshold,
       v3UntrackedUsdThreshold,
-      v3SubgraphUrlOverride(ChainId.POLYGON)
-    ),
-  },
-  // Waiting for Alchemy subgraph
-  {
-    protocol: Protocol.V3,
-    chainId: ChainId.OPTIMISM,
-    timeout: 90000,
-    provider: new V3SubgraphProvider(
-      ChainId.OPTIMISM,
-      3,
-      90000,
-      true,
-      v3TrackedEthThreshold,
-      v3UntrackedUsdThreshold,
-      v3SubgraphUrlOverride(ChainId.OPTIMISM)
-    ),
-  },
-  {
-    protocol: Protocol.V3,
-    chainId: ChainId.CELO,
-    timeout: 90000,
-    provider: new V3SubgraphProvider(
-      ChainId.CELO,
-      3,
-      90000,
-      true,
-      v3TrackedEthThreshold,
-      v3UntrackedUsdThreshold,
-      v3SubgraphUrlOverride(ChainId.CELO)
-    ),
-  },
-  {
-    protocol: Protocol.V3,
-    chainId: ChainId.BNB,
-    timeout: 90000,
-    provider: new V3SubgraphProvider(
-      ChainId.BNB,
-      3,
-      90000,
-      true,
-      v3TrackedEthThreshold,
-      v3UntrackedUsdThreshold,
-      v3SubgraphUrlOverride(ChainId.BNB)
-    ),
-  },
-  {
-    protocol: Protocol.V3,
-    chainId: ChainId.AVALANCHE,
-    timeout: 90000,
-    provider: new V3SubgraphProvider(
-      ChainId.AVALANCHE,
-      3,
-      90000,
-      true,
-      v3TrackedEthThreshold,
-      v3UntrackedUsdThreshold,
-      v3SubgraphUrlOverride(ChainId.AVALANCHE)
-    ),
-  },
-  {
-    protocol: Protocol.V3,
-    chainId: ChainId.BASE,
-    timeout: 90000,
-    provider: new V3SubgraphProvider(
-      ChainId.BASE,
-      3,
-      900000, // base has more pools than other chains, so we need to increase the timeout
-      true,
-      v3BaseTrackedEthThreshold,
-      v3UntrackedUsdThreshold,
-      v3SubgraphUrlOverride(ChainId.BASE)
-    ),
-  },
-  {
-    protocol: Protocol.V3,
-    chainId: ChainId.BLAST,
-    timeout: 90000,
-    provider: new V3SubgraphProvider(
-      ChainId.BLAST,
-      3,
-      90000,
-      true,
-      v3TrackedEthThreshold,
-      v3UntrackedUsdThreshold,
-      v3SubgraphUrlOverride(ChainId.BLAST)
-    ),
-  },
-  {
-    protocol: Protocol.V3,
-    chainId: ChainId.UNICHAIN,
-    timeout: 90000,
-    provider: new V3SubgraphProvider(
-      ChainId.UNICHAIN,
-      3,
-      90000,
-      true,
-      v3TrackedEthThreshold,
-      v3UntrackedUsdThreshold,
-      v3SubgraphUrlOverride(ChainId.UNICHAIN)
-    ),
-  },
-  {
-    protocol: Protocol.V3,
-    chainId: ChainId.WORLDCHAIN,
-    timeout: 90000,
-    provider: new V3SubgraphProvider(
-      ChainId.WORLDCHAIN,
-      3,
-      90000,
-      true,
-      v3TrackedEthThreshold,
-      v3UntrackedUsdThreshold,
-      v3SubgraphUrlOverride(ChainId.WORLDCHAIN)
-    ),
-  },
-  {
-    protocol: Protocol.V3,
-    chainId: ChainId.ZORA,
-    timeout: 90000,
-    provider: new V3SubgraphProvider(
-      ChainId.ZORA,
-      3,
-      360000, // zora has more pools than other chains, so we need to increase the timeout
-      true,
-      v3TrackedEthThreshold,
-      v3UntrackedUsdThreshold,
-      v3SubgraphUrlOverride(ChainId.ZORA)
-    ),
-  },
-  {
-    protocol: Protocol.V3,
-    chainId: ChainId.SONEIUM,
-    timeout: 90000,
-    provider: new V3SubgraphProvider(
-      ChainId.SONEIUM,
-      3,
-      90000,
-      true,
-      v3TrackedEthThreshold,
-      v3UntrackedUsdThreshold,
-      v3SubgraphUrlOverride(ChainId.SONEIUM)
-    ),
-  },
-  {
-    protocol: Protocol.V3,
-    chainId: ChainId.MONAD,
-    timeout: 90000,
-    provider: new V3SubgraphProvider(
-      ChainId.MONAD,
-      3,
-      90000,
-      true,
-      v3TrackedEthThreshold,
-      v3UntrackedUsdThreshold,
-      v3SubgraphUrlOverride(ChainId.MONAD),
-      process.env.GOLD_SKY_BEARER_TOKEN
-    ),
-  },
-  {
-    protocol: Protocol.V3,
-    chainId: ChainId.XLAYER,
-    timeout: 90000,
-    provider: new V3SubgraphProvider(
-      ChainId.XLAYER,
-      3,
-      90000,
-      true,
-      v3TrackedEthThreshold,
-      v3UntrackedUsdThreshold,
-      v3SubgraphUrlOverride(ChainId.XLAYER),
-      process.env.GRAPH_BEARER_TOKEN
+      v3SubgraphUrlOverride(ChainId.DOMA_SEPOLIA)
     ),
   },
   // V2.
-  {
-    protocol: Protocol.V2,
-    chainId: ChainId.MAINNET,
-    timeout: 840000,
-    provider: new V2SubgraphProvider(
-      ChainId.MAINNET,
-      5,
-      900000,
-      true,
-      1000,
-      v2TrackedEthThreshold,
-      v2UntrackedUsdThreshold,
-      v2SubgraphUrlOverride(ChainId.MAINNET)
-    ), // 1000 is the largest page size supported by thegraph
-  },
-  {
-    protocol: Protocol.V2,
-    chainId: ChainId.ARBITRUM_ONE,
-    timeout: 90000,
-    provider: new V2SubgraphProvider(
-      ChainId.ARBITRUM_ONE,
-      3,
-      90000,
-      true,
-      1000,
-      v2TrackedEthThreshold,
-      v2UntrackedUsdThreshold,
-      v2SubgraphUrlOverride(ChainId.ARBITRUM_ONE)
-    ),
-  },
-  {
-    protocol: Protocol.V2,
-    chainId: ChainId.POLYGON,
-    timeout: 90000,
-    provider: new V2SubgraphProvider(
-      ChainId.POLYGON,
-      3,
-      90000,
-      true,
-      1000,
-      v2TrackedEthThreshold,
-      v2UntrackedUsdThreshold,
-      v2SubgraphUrlOverride(ChainId.POLYGON)
-    ),
-  },
-  {
-    protocol: Protocol.V2,
-    chainId: ChainId.OPTIMISM,
-    timeout: 90000,
-    provider: new V2SubgraphProvider(
-      ChainId.OPTIMISM,
-      3,
-      90000,
-      true,
-      1000,
-      v2TrackedEthThreshold,
-      v2UntrackedUsdThreshold,
-      v2SubgraphUrlOverride(ChainId.OPTIMISM)
-    ),
-  },
-  {
-    protocol: Protocol.V2,
-    chainId: ChainId.BNB,
-    timeout: 90000,
-    provider: new V2SubgraphProvider(
-      ChainId.BNB,
-      3,
-      90000,
-      true,
-      1000,
-      v2TrackedEthThreshold,
-      v2UntrackedUsdThreshold,
-      v2SubgraphUrlOverride(ChainId.BNB)
-    ),
-  },
-  {
-    protocol: Protocol.V2,
-    chainId: ChainId.AVALANCHE,
-    timeout: 90000,
-    provider: new V2SubgraphProvider(
-      ChainId.AVALANCHE,
-      3,
-      90000,
-      true,
-      1000,
-      v2TrackedEthThreshold,
-      v2UntrackedUsdThreshold,
-      v2SubgraphUrlOverride(ChainId.AVALANCHE)
-    ),
-  },
-  {
-    protocol: Protocol.V2,
-    chainId: ChainId.BASE,
-    timeout: 840000,
-    provider: new V2SubgraphProvider(
-      ChainId.BASE,
-      5,
-      900000,
-      true,
-      10000,
-      v2BaseTrackedEthThreshold,
-      v2UntrackedUsdThreshold,
-      v2SubgraphUrlOverride(ChainId.BASE)
-    ),
-  },
-  {
-    protocol: Protocol.V2,
-    chainId: ChainId.BLAST,
-    timeout: 90000,
-    provider: new V2SubgraphProvider(
-      ChainId.BLAST,
-      3,
-      90000,
-      true,
-      1000,
-      v2TrackedEthThreshold,
-      v2UntrackedUsdThreshold,
-      v2SubgraphUrlOverride(ChainId.BLAST)
-    ),
-  },
-  {
-    protocol: Protocol.V2,
-    chainId: ChainId.WORLDCHAIN,
-    timeout: 90000,
-    provider: new V2SubgraphProvider(
-      ChainId.WORLDCHAIN,
-      3,
-      90000,
-      true,
-      1000,
-      v2TrackedEthThreshold,
-      v2UntrackedUsdThreshold,
-      v2SubgraphUrlOverride(ChainId.WORLDCHAIN)
-    ),
-  },
-  {
-    protocol: Protocol.V2,
-    chainId: ChainId.MONAD_TESTNET,
-    timeout: 90000,
-    provider: new V2SubgraphProvider(
-      ChainId.MONAD_TESTNET,
-      3,
-      90000,
-      true,
-      1000,
-      v2TrackedEthThreshold,
-      v2UntrackedUsdThreshold,
-      v2SubgraphUrlOverride(ChainId.MONAD_TESTNET)
-    ),
-  },
-  {
-    protocol: Protocol.V2,
-    chainId: ChainId.UNICHAIN,
-    timeout: 90000,
-    provider: new V2SubgraphProvider(
-      ChainId.UNICHAIN,
-      3,
-      90000,
-      true,
-      1000,
-      v2TrackedEthThreshold,
-      v2UntrackedUsdThreshold,
-      v2SubgraphUrlOverride(ChainId.UNICHAIN)
-    ),
-  },
-  {
-    protocol: Protocol.V2,
-    chainId: ChainId.SONEIUM,
-    timeout: 90000,
-    provider: new V2SubgraphProvider(
-      ChainId.SONEIUM,
-      3,
-      90000,
-      true,
-      1000,
-      v2TrackedEthThreshold,
-      v2UntrackedUsdThreshold,
-      v2SubgraphUrlOverride(ChainId.SONEIUM)
-    ),
-  },
-  {
-    protocol: Protocol.V2,
-    chainId: ChainId.MONAD,
-    timeout: 90000,
-    provider: new V2SubgraphProvider(
-      ChainId.MONAD,
-      3,
-      90000,
-      true,
-      1000,
-      v2TrackedEthThreshold,
-      v2UntrackedUsdThreshold,
-      v2SubgraphUrlOverride(ChainId.MONAD),
-      process.env.GOLD_SKY_BEARER_TOKEN
-    ),
-  },
-  {
-    protocol: Protocol.V2,
-    chainId: ChainId.XLAYER,
-    timeout: 90000,
-    provider: new V2SubgraphProvider(
-      ChainId.XLAYER,
-      3,
-      90000,
-      true,
-      1000,
-      v2TrackedEthThreshold,
-      v2UntrackedUsdThreshold,
-      v2SubgraphUrlOverride(ChainId.XLAYER),
-      process.env.GRAPH_BEARER_TOKEN
-    ),
-  },
+  // {
+  //   protocol: Protocol.V2,
+  //   chainId: ChainId.MAINNET,
+  //   timeout: 840000,
+  //   provider: new V2SubgraphProvider(
+  //     ChainId.MAINNET,
+  //     5,
+  //     900000,
+  //     true,
+  //     1000,
+  //     v2TrackedEthThreshold,
+  //     v2UntrackedUsdThreshold,
+  //     v2SubgraphUrlOverride(ChainId.MAINNET)
+  //   ), // 1000 is the largest page size supported by thegraph
+  // },
+  // {
+  //   protocol: Protocol.V2,
+  //   chainId: ChainId.ARBITRUM_ONE,
+  //   timeout: 90000,
+  //   provider: new V2SubgraphProvider(
+  //     ChainId.ARBITRUM_ONE,
+  //     3,
+  //     90000,
+  //     true,
+  //     1000,
+  //     v2TrackedEthThreshold,
+  //     v2UntrackedUsdThreshold,
+  //     v2SubgraphUrlOverride(ChainId.ARBITRUM_ONE)
+  //   ),
+  // },
+  // {
+  //   protocol: Protocol.V2,
+  //   chainId: ChainId.POLYGON,
+  //   timeout: 90000,
+  //   provider: new V2SubgraphProvider(
+  //     ChainId.POLYGON,
+  //     3,
+  //     90000,
+  //     true,
+  //     1000,
+  //     v2TrackedEthThreshold,
+  //     v2UntrackedUsdThreshold,
+  //     v2SubgraphUrlOverride(ChainId.POLYGON)
+  //   ),
+  // },
+  // {
+  //   protocol: Protocol.V2,
+  //   chainId: ChainId.OPTIMISM,
+  //   timeout: 90000,
+  //   provider: new V2SubgraphProvider(
+  //     ChainId.OPTIMISM,
+  //     3,
+  //     90000,
+  //     true,
+  //     1000,
+  //     v2TrackedEthThreshold,
+  //     v2UntrackedUsdThreshold,
+  //     v2SubgraphUrlOverride(ChainId.OPTIMISM)
+  //   ),
+  // },
+  // {
+  //   protocol: Protocol.V2,
+  //   chainId: ChainId.BNB,
+  //   timeout: 90000,
+  //   provider: new V2SubgraphProvider(
+  //     ChainId.BNB,
+  //     3,
+  //     90000,
+  //     true,
+  //     1000,
+  //     v2TrackedEthThreshold,
+  //     v2UntrackedUsdThreshold,
+  //     v2SubgraphUrlOverride(ChainId.BNB)
+  //   ),
+  // },
+  // {
+  //   protocol: Protocol.V2,
+  //   chainId: ChainId.AVALANCHE,
+  //   timeout: 90000,
+  //   provider: new V2SubgraphProvider(
+  //     ChainId.AVALANCHE,
+  //     3,
+  //     90000,
+  //     true,
+  //     1000,
+  //     v2TrackedEthThreshold,
+  //     v2UntrackedUsdThreshold,
+  //     v2SubgraphUrlOverride(ChainId.AVALANCHE)
+  //   ),
+  // },
+  // {
+  //   protocol: Protocol.V2,
+  //   chainId: ChainId.BASE,
+  //   timeout: 840000,
+  //   provider: new V2SubgraphProvider(
+  //     ChainId.BASE,
+  //     5,
+  //     900000,
+  //     true,
+  //     10000,
+  //     v2BaseTrackedEthThreshold,
+  //     v2UntrackedUsdThreshold,
+  //     v2SubgraphUrlOverride(ChainId.BASE)
+  //   ),
+  // },
+  // {
+  //   protocol: Protocol.V2,
+  //   chainId: ChainId.BLAST,
+  //   timeout: 90000,
+  //   provider: new V2SubgraphProvider(
+  //     ChainId.BLAST,
+  //     3,
+  //     90000,
+  //     true,
+  //     1000,
+  //     v2TrackedEthThreshold,
+  //     v2UntrackedUsdThreshold,
+  //     v2SubgraphUrlOverride(ChainId.BLAST)
+  //   ),
+  // },
+  // {
+  //   protocol: Protocol.V2,
+  //   chainId: ChainId.WORLDCHAIN,
+  //   timeout: 90000,
+  //   provider: new V2SubgraphProvider(
+  //     ChainId.WORLDCHAIN,
+  //     3,
+  //     90000,
+  //     true,
+  //     1000,
+  //     v2TrackedEthThreshold,
+  //     v2UntrackedUsdThreshold,
+  //     v2SubgraphUrlOverride(ChainId.WORLDCHAIN)
+  //   ),
+  // },
+  // {
+  //   protocol: Protocol.V2,
+  //   chainId: ChainId.MONAD_TESTNET,
+  //   timeout: 90000,
+  //   provider: new V2SubgraphProvider(
+  //     ChainId.MONAD_TESTNET,
+  //     3,
+  //     90000,
+  //     true,
+  //     1000,
+  //     v2TrackedEthThreshold,
+  //     v2UntrackedUsdThreshold,
+  //     v2SubgraphUrlOverride(ChainId.MONAD_TESTNET)
+  //   ),
+  // },
+  // {
+  //   protocol: Protocol.V2,
+  //   chainId: ChainId.UNICHAIN,
+  //   timeout: 90000,
+  //   provider: new V2SubgraphProvider(
+  //     ChainId.UNICHAIN,
+  //     3,
+  //     90000,
+  //     true,
+  //     1000,
+  //     v2TrackedEthThreshold,
+  //     v2UntrackedUsdThreshold,
+  //     v2SubgraphUrlOverride(ChainId.UNICHAIN)
+  //   ),
+  // },
+  // {
+  //   protocol: Protocol.V2,
+  //   chainId: ChainId.SONEIUM,
+  //   timeout: 90000,
+  //   provider: new V2SubgraphProvider(
+  //     ChainId.SONEIUM,
+  //     3,
+  //     90000,
+  //     true,
+  //     1000,
+  //     v2TrackedEthThreshold,
+  //     v2UntrackedUsdThreshold,
+  //     v2SubgraphUrlOverride(ChainId.SONEIUM)
+  //   ),
+  // },
+  // {
+  //   protocol: Protocol.V2,
+  //   chainId: ChainId.MONAD,
+  //   timeout: 90000,
+  //   provider: new V2SubgraphProvider(
+  //     ChainId.MONAD,
+  //     3,
+  //     90000,
+  //     true,
+  //     1000,
+  //     v2TrackedEthThreshold,
+  //     v2UntrackedUsdThreshold,
+  //     v2SubgraphUrlOverride(ChainId.MONAD),
+  //     process.env.GOLD_SKY_BEARER_TOKEN
+  //   ),
+  // },
+  // {
+  //   protocol: Protocol.V2,
+  //   chainId: ChainId.XLAYER,
+  //   timeout: 90000,
+  //   provider: new V2SubgraphProvider(
+  //     ChainId.XLAYER,
+  //     3,
+  //     90000,
+  //     true,
+  //     1000,
+  //     v2TrackedEthThreshold,
+  //     v2UntrackedUsdThreshold,
+  //     v2SubgraphUrlOverride(ChainId.XLAYER),
+  //     process.env.GRAPH_BEARER_TOKEN
+  //   ),
+  // },
   // V4
-  {
-    protocol: Protocol.V4,
-    chainId: ChainId.SEPOLIA,
-    timeout: 90000,
-    provider: new V4SubgraphProvider(
-      ChainId.SEPOLIA,
-      3,
-      90000,
-      true,
-      v4TrackedEthThreshold,
-      v4BaseZoraTrackedEthThreshold,
-      ZORA_HOOKS_FOR_V4_SUBGRAPH_FILTERING,
-      v4UntrackedUsdThreshold,
-      v4SubgraphUrlOverride(ChainId.SEPOLIA)
-    ),
-  },
-  {
-    protocol: Protocol.V4,
-    chainId: ChainId.ARBITRUM_ONE,
-    timeout: 90000,
-    provider: new V4SubgraphProvider(
-      ChainId.ARBITRUM_ONE,
-      3,
-      90000,
-      true,
-      v4TrackedEthThreshold,
-      v4BaseZoraTrackedEthThreshold,
-      ZORA_HOOKS_FOR_V4_SUBGRAPH_FILTERING,
-      v4UntrackedUsdThreshold,
-      v4SubgraphUrlOverride(ChainId.ARBITRUM_ONE)
-    ),
-  },
-  {
-    protocol: Protocol.V4,
-    chainId: ChainId.BASE,
-    timeout: 90000,
-    provider: new V4SubgraphProvider(
-      ChainId.BASE,
-      3,
-      90000,
-      true,
-      v4BaseTrackedEthThreshold,
-      v4BaseZoraTrackedEthThreshold,
-      ZORA_HOOKS_FOR_V4_SUBGRAPH_FILTERING,
-      v4UntrackedUsdThreshold,
-      v4SubgraphUrlOverride(ChainId.BASE),
-      process.env.GRAPH_BEARER_TOKEN
-    ),
-  },
-  {
-    protocol: Protocol.V4,
-    chainId: ChainId.POLYGON,
-    timeout: 90000,
-    provider: new V4SubgraphProvider(
-      ChainId.POLYGON,
-      3,
-      90000,
-      true,
-      v4TrackedEthThreshold,
-      v4BaseZoraTrackedEthThreshold,
-      ZORA_HOOKS_FOR_V4_SUBGRAPH_FILTERING,
-      v4UntrackedUsdThreshold,
-      v4SubgraphUrlOverride(ChainId.POLYGON)
-    ),
-  },
-  {
-    protocol: Protocol.V4,
-    chainId: ChainId.WORLDCHAIN,
-    timeout: 90000,
-    provider: new V4SubgraphProvider(
-      ChainId.WORLDCHAIN,
-      3,
-      90000,
-      true,
-      v4TrackedEthThreshold,
-      v4BaseZoraTrackedEthThreshold,
-      ZORA_HOOKS_FOR_V4_SUBGRAPH_FILTERING,
-      v4UntrackedUsdThreshold,
-      v4SubgraphUrlOverride(ChainId.WORLDCHAIN)
-    ),
-  },
-  {
-    protocol: Protocol.V4,
-    chainId: ChainId.ZORA,
-    timeout: 90000,
-    provider: new V4SubgraphProvider(
-      ChainId.ZORA,
-      3,
-      90000,
-      true,
-      v4TrackedEthThreshold,
-      v4BaseZoraTrackedEthThreshold,
-      ZORA_HOOKS_FOR_V4_SUBGRAPH_FILTERING,
-      v4UntrackedUsdThreshold,
-      v4SubgraphUrlOverride(ChainId.ZORA)
-    ),
-  },
-  {
-    protocol: Protocol.V4,
-    chainId: ChainId.UNICHAIN,
-    timeout: 90000,
-    provider: new V4SubgraphProvider(
-      ChainId.UNICHAIN,
-      3,
-      90000,
-      true,
-      v4TrackedEthThreshold,
-      v4BaseZoraTrackedEthThreshold,
-      ZORA_HOOKS_FOR_V4_SUBGRAPH_FILTERING,
-      v4UntrackedUsdThreshold,
-      v4SubgraphUrlOverride(ChainId.UNICHAIN)
-    ),
-    eulerHooksProvider: new EulerSwapHooksSubgraphProvider(
-      ChainId.UNICHAIN,
-      3,
-      90000,
-      true,
-      v4SubgraphUrlOverride(ChainId.UNICHAIN)
-    ),
-  },
-  {
-    protocol: Protocol.V4,
-    chainId: ChainId.BLAST,
-    timeout: 90000,
-    provider: new V4SubgraphProvider(
-      ChainId.BLAST,
-      3,
-      90000,
-      true,
-      v4TrackedEthThreshold,
-      v4BaseZoraTrackedEthThreshold,
-      ZORA_HOOKS_FOR_V4_SUBGRAPH_FILTERING,
-      v4UntrackedUsdThreshold,
-      v4SubgraphUrlOverride(ChainId.BLAST)
-    ),
-  },
-  {
-    protocol: Protocol.V4,
-    chainId: ChainId.MAINNET,
-    timeout: 90000,
-    provider: new V4SubgraphProvider(
-      ChainId.MAINNET,
-      3,
-      90000,
-      true,
-      v4TrackedEthThreshold,
-      v4BaseZoraTrackedEthThreshold,
-      ZORA_HOOKS_FOR_V4_SUBGRAPH_FILTERING,
-      v4UntrackedUsdThreshold,
-      v4SubgraphUrlOverride(ChainId.MAINNET)
-    ),
-    eulerHooksProvider: new EulerSwapHooksSubgraphProvider(
-      ChainId.MAINNET,
-      3,
-      90000,
-      true,
-      v4SubgraphUrlOverride(ChainId.MAINNET)
-    ),
-  },
-  {
-    protocol: Protocol.V4,
-    chainId: ChainId.SONEIUM,
-    timeout: 90000,
-    provider: new V4SubgraphProvider(
-      ChainId.SONEIUM,
-      3,
-      90000,
-      true,
-      v4TrackedEthThreshold,
-      v4BaseZoraTrackedEthThreshold,
-      ZORA_HOOKS_FOR_V4_SUBGRAPH_FILTERING,
-      v4UntrackedUsdThreshold,
-      v4SubgraphUrlOverride(ChainId.SONEIUM)
-    ),
-  },
-  {
-    protocol: Protocol.V4,
-    chainId: ChainId.OPTIMISM,
-    timeout: 90000,
-    provider: new V4SubgraphProvider(
-      ChainId.OPTIMISM,
-      3,
-      90000,
-      true,
-      v4TrackedEthThreshold,
-      v4BaseZoraTrackedEthThreshold,
-      ZORA_HOOKS_FOR_V4_SUBGRAPH_FILTERING,
-      v4UntrackedUsdThreshold,
-      v4SubgraphUrlOverride(ChainId.OPTIMISM)
-    ),
-  },
-  {
-    protocol: Protocol.V4,
-    chainId: ChainId.BNB,
-    timeout: 90000,
-    provider: new V4SubgraphProvider(
-      ChainId.BNB,
-      3,
-      90000,
-      true,
-      v4TrackedEthThreshold,
-      v4BaseZoraTrackedEthThreshold,
-      ZORA_HOOKS_FOR_V4_SUBGRAPH_FILTERING,
-      v4UntrackedUsdThreshold,
-      v4SubgraphUrlOverride(ChainId.BNB)
-    ),
-  },
-  {
-    protocol: Protocol.V4,
-    chainId: ChainId.MONAD,
-    timeout: 90000,
-    provider: new V4SubgraphProvider(
-      ChainId.MONAD,
-      3,
-      90000,
-      true,
-      v4TrackedEthThreshold,
-      v4BaseZoraTrackedEthThreshold,
-      ZORA_HOOKS_FOR_V4_SUBGRAPH_FILTERING,
-      v4UntrackedUsdThreshold,
-      v4SubgraphUrlOverride(ChainId.MONAD),
-      process.env.GOLD_SKY_BEARER_TOKEN
-    ),
-  },
-  {
-    protocol: Protocol.V4,
-    chainId: ChainId.XLAYER,
-    timeout: 90000,
-    provider: new V4SubgraphProvider(
-      ChainId.XLAYER,
-      3,
-      90000,
-      true,
-      v4TrackedEthThreshold,
-      v4BaseZoraTrackedEthThreshold,
-      ZORA_HOOKS_FOR_V4_SUBGRAPH_FILTERING,
-      v4UntrackedUsdThreshold,
-      v4SubgraphUrlOverride(ChainId.XLAYER),
-      process.env.GRAPH_BEARER_TOKEN
-    ),
-  },
+  // {
+  //   protocol: Protocol.V4,
+  //   chainId: ChainId.SEPOLIA,
+  //   timeout: 90000,
+  //   provider: new V4SubgraphProvider(
+  //     ChainId.SEPOLIA,
+  //     3,
+  //     90000,
+  //     true,
+  //     v4TrackedEthThreshold,
+  //     v4BaseZoraTrackedEthThreshold,
+  //     ZORA_HOOKS_FOR_V4_SUBGRAPH_FILTERING,
+  //     v4UntrackedUsdThreshold,
+  //     v4SubgraphUrlOverride(ChainId.SEPOLIA)
+  //   ),
+  // },
+  // {
+  //   protocol: Protocol.V4,
+  //   chainId: ChainId.ARBITRUM_ONE,
+  //   timeout: 90000,
+  //   provider: new V4SubgraphProvider(
+  //     ChainId.ARBITRUM_ONE,
+  //     3,
+  //     90000,
+  //     true,
+  //     v4TrackedEthThreshold,
+  //     v4BaseZoraTrackedEthThreshold,
+  //     ZORA_HOOKS_FOR_V4_SUBGRAPH_FILTERING,
+  //     v4UntrackedUsdThreshold,
+  //     v4SubgraphUrlOverride(ChainId.ARBITRUM_ONE)
+  //   ),
+  // },
+  // {
+  //   protocol: Protocol.V4,
+  //   chainId: ChainId.BASE,
+  //   timeout: 90000,
+  //   provider: new V4SubgraphProvider(
+  //     ChainId.BASE,
+  //     3,
+  //     90000,
+  //     true,
+  //     v4BaseTrackedEthThreshold,
+  //     v4BaseZoraTrackedEthThreshold,
+  //     ZORA_HOOKS_FOR_V4_SUBGRAPH_FILTERING,
+  //     v4UntrackedUsdThreshold,
+  //     v4SubgraphUrlOverride(ChainId.BASE),
+  //     process.env.GRAPH_BEARER_TOKEN
+  //   ),
+  // },
+  // {
+  //   protocol: Protocol.V4,
+  //   chainId: ChainId.POLYGON,
+  //   timeout: 90000,
+  //   provider: new V4SubgraphProvider(
+  //     ChainId.POLYGON,
+  //     3,
+  //     90000,
+  //     true,
+  //     v4TrackedEthThreshold,
+  //     v4BaseZoraTrackedEthThreshold,
+  //     ZORA_HOOKS_FOR_V4_SUBGRAPH_FILTERING,
+  //     v4UntrackedUsdThreshold,
+  //     v4SubgraphUrlOverride(ChainId.POLYGON)
+  //   ),
+  // },
+  // {
+  //   protocol: Protocol.V4,
+  //   chainId: ChainId.WORLDCHAIN,
+  //   timeout: 90000,
+  //   provider: new V4SubgraphProvider(
+  //     ChainId.WORLDCHAIN,
+  //     3,
+  //     90000,
+  //     true,
+  //     v4TrackedEthThreshold,
+  //     v4BaseZoraTrackedEthThreshold,
+  //     ZORA_HOOKS_FOR_V4_SUBGRAPH_FILTERING,
+  //     v4UntrackedUsdThreshold,
+  //     v4SubgraphUrlOverride(ChainId.WORLDCHAIN)
+  //   ),
+  // },
+  // {
+  //   protocol: Protocol.V4,
+  //   chainId: ChainId.ZORA,
+  //   timeout: 90000,
+  //   provider: new V4SubgraphProvider(
+  //     ChainId.ZORA,
+  //     3,
+  //     90000,
+  //     true,
+  //     v4TrackedEthThreshold,
+  //     v4BaseZoraTrackedEthThreshold,
+  //     ZORA_HOOKS_FOR_V4_SUBGRAPH_FILTERING,
+  //     v4UntrackedUsdThreshold,
+  //     v4SubgraphUrlOverride(ChainId.ZORA)
+  //   ),
+  // },
+  // {
+  //   protocol: Protocol.V4,
+  //   chainId: ChainId.UNICHAIN,
+  //   timeout: 90000,
+  //   provider: new V4SubgraphProvider(
+  //     ChainId.UNICHAIN,
+  //     3,
+  //     90000,
+  //     true,
+  //     v4TrackedEthThreshold,
+  //     v4BaseZoraTrackedEthThreshold,
+  //     ZORA_HOOKS_FOR_V4_SUBGRAPH_FILTERING,
+  //     v4UntrackedUsdThreshold,
+  //     v4SubgraphUrlOverride(ChainId.UNICHAIN)
+  //   ),
+  //   eulerHooksProvider: new EulerSwapHooksSubgraphProvider(
+  //     ChainId.UNICHAIN,
+  //     3,
+  //     90000,
+  //     true,
+  //     v4SubgraphUrlOverride(ChainId.UNICHAIN)
+  //   ),
+  // },
+  // {
+  //   protocol: Protocol.V4,
+  //   chainId: ChainId.BLAST,
+  //   timeout: 90000,
+  //   provider: new V4SubgraphProvider(
+  //     ChainId.BLAST,
+  //     3,
+  //     90000,
+  //     true,
+  //     v4TrackedEthThreshold,
+  //     v4BaseZoraTrackedEthThreshold,
+  //     ZORA_HOOKS_FOR_V4_SUBGRAPH_FILTERING,
+  //     v4UntrackedUsdThreshold,
+  //     v4SubgraphUrlOverride(ChainId.BLAST)
+  //   ),
+  // },
+  // {
+  //   protocol: Protocol.V4,
+  //   chainId: ChainId.MAINNET,
+  //   timeout: 90000,
+  //   provider: new V4SubgraphProvider(
+  //     ChainId.MAINNET,
+  //     3,
+  //     90000,
+  //     true,
+  //     v4TrackedEthThreshold,
+  //     v4BaseZoraTrackedEthThreshold,
+  //     ZORA_HOOKS_FOR_V4_SUBGRAPH_FILTERING,
+  //     v4UntrackedUsdThreshold,
+  //     v4SubgraphUrlOverride(ChainId.MAINNET)
+  //   ),
+  //   eulerHooksProvider: new EulerSwapHooksSubgraphProvider(
+  //     ChainId.MAINNET,
+  //     3,
+  //     90000,
+  //     true,
+  //     v4SubgraphUrlOverride(ChainId.MAINNET)
+  //   ),
+  // },
+  // {
+  //   protocol: Protocol.V4,
+  //   chainId: ChainId.SONEIUM,
+  //   timeout: 90000,
+  //   provider: new V4SubgraphProvider(
+  //     ChainId.SONEIUM,
+  //     3,
+  //     90000,
+  //     true,
+  //     v4TrackedEthThreshold,
+  //     v4BaseZoraTrackedEthThreshold,
+  //     ZORA_HOOKS_FOR_V4_SUBGRAPH_FILTERING,
+  //     v4UntrackedUsdThreshold,
+  //     v4SubgraphUrlOverride(ChainId.SONEIUM)
+  //   ),
+  // },
+  // {
+  //   protocol: Protocol.V4,
+  //   chainId: ChainId.OPTIMISM,
+  //   timeout: 90000,
+  //   provider: new V4SubgraphProvider(
+  //     ChainId.OPTIMISM,
+  //     3,
+  //     90000,
+  //     true,
+  //     v4TrackedEthThreshold,
+  //     v4BaseZoraTrackedEthThreshold,
+  //     ZORA_HOOKS_FOR_V4_SUBGRAPH_FILTERING,
+  //     v4UntrackedUsdThreshold,
+  //     v4SubgraphUrlOverride(ChainId.OPTIMISM)
+  //   ),
+  // },
+  // {
+  //   protocol: Protocol.V4,
+  //   chainId: ChainId.BNB,
+  //   timeout: 90000,
+  //   provider: new V4SubgraphProvider(
+  //     ChainId.BNB,
+  //     3,
+  //     90000,
+  //     true,
+  //     v4TrackedEthThreshold,
+  //     v4BaseZoraTrackedEthThreshold,
+  //     ZORA_HOOKS_FOR_V4_SUBGRAPH_FILTERING,
+  //     v4UntrackedUsdThreshold,
+  //     v4SubgraphUrlOverride(ChainId.BNB)
+  //   ),
+  // },
+  // {
+  //   protocol: Protocol.V4,
+  //   chainId: ChainId.MONAD,
+  //   timeout: 90000,
+  //   provider: new V4SubgraphProvider(
+  //     ChainId.MONAD,
+  //     3,
+  //     90000,
+  //     true,
+  //     v4TrackedEthThreshold,
+  //     v4BaseZoraTrackedEthThreshold,
+  //     ZORA_HOOKS_FOR_V4_SUBGRAPH_FILTERING,
+  //     v4UntrackedUsdThreshold,
+  //     v4SubgraphUrlOverride(ChainId.MONAD),
+  //     process.env.GOLD_SKY_BEARER_TOKEN
+  //   ),
+  // },
+  // {
+  //   protocol: Protocol.V4,
+  //   chainId: ChainId.XLAYER,
+  //   timeout: 90000,
+  //   provider: new V4SubgraphProvider(
+  //     ChainId.XLAYER,
+  //     3,
+  //     90000,
+  //     true,
+  //     v4TrackedEthThreshold,
+  //     v4BaseZoraTrackedEthThreshold,
+  //     ZORA_HOOKS_FOR_V4_SUBGRAPH_FILTERING,
+  //     v4UntrackedUsdThreshold,
+  //     v4SubgraphUrlOverride(ChainId.XLAYER),
+  //     process.env.GRAPH_BEARER_TOKEN
+  //   ),
+  // },
 ]

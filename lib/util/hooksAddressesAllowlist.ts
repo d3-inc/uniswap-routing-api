@@ -299,4 +299,10 @@ export const HOOKS_ADDRESSES_ALLOWLIST: { [chain in ChainId]: Array<string> } = 
   ],
   [ChainId.SONEIUM]: [ADDRESS_ZERO],
   [ChainId.XLAYER]: [ADDRESS_ZERO, AEGIS_V3],
+    [ChainId.DOMA]: [
+    ADDRESS_ZERO
+  ],
+  [ChainId.DOMA_SEPOLIA]: [
+    ADDRESS_ZERO
+  ],
 }
