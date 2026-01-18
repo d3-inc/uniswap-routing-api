@@ -318,6 +318,11 @@ export class RoutingCachingStack extends cdk.NestedStack {
       `arn:aws:lambda:${region}:580247275435:layer:LambdaInsightsExtension:14`
     )
 
+    // TRACING env var defaults to ACTIVE unless set to 'false'
+    const tracingMode = process.env.TRACING === 'false' 
+      ? aws_lambda.Tracing.DISABLED 
+      : aws_lambda.Tracing.ACTIVE;
+
     // Spin up a new pool cache lambda for each config in chain X protocol
     for (let i = 0; i < chainProtocols.length; i++) {
       const { protocol, chainId, timeout } = chainProtocols[i]
@@ -337,7 +342,7 @@ export class RoutingCachingStack extends cdk.NestedStack {
           },
           description: `Pool Cache Lambda for Chain with ChainId ${chainId} and Protocol ${protocol}`,
           layers: [lambdaLayerVersion],
-          tracing: aws_lambda.Tracing.ACTIVE,
+          tracing: tracingMode,
           environment: {
             VERSION: '5',
             POOL_CACHE_BUCKET: this.poolCacheBucket.bucketName,
@@ -470,7 +475,7 @@ export class RoutingCachingStack extends cdk.NestedStack {
         ),
       ],
       description: 'Token List Cache Lambda',
-      tracing: aws_lambda.Tracing.ACTIVE,
+      tracing: tracingMode,
       environment: {
         TOKEN_LIST_CACHE_BUCKET: this.tokenListCacheBucket.bucketName,
       },
