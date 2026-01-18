@@ -1,5 +1,6 @@
 import Joi from '@hapi/joi'
 import { metricScope, MetricsLogger } from 'aws-embedded-metrics'
+import { NoopRoutingMetrics, RoutingMetrics } from './metrics'
 import {
   APIGatewayProxyEvent,
   APIGatewayProxyEventQueryStringParameters,
@@ -7,6 +8,7 @@ import {
   Context,
 } from 'aws-lambda'
 import { default as bunyan, default as Logger } from 'bunyan'
+const METRICS_SAMPLE_RATE = Number(process.env.METRICS_SAMPLE_RATE ?? '1');
 
 export type APIGatewayProxyHandler = (event: APIGatewayProxyEvent, context: Context) => Promise<APIGatewayProxyResult>
 
@@ -45,7 +47,7 @@ export class UnsupportedChainError extends Error {
 
 export abstract class Injector<CInj, RInj extends BaseRInj, ReqBody, ReqQueryParams> {
   private containerInjected: CInj
-  public constructor(protected injectorName: string) {}
+  public constructor(protected injectorName: string) { }
 
   public async build() {
     this.containerInjected = await this.buildContainerInjected()
@@ -59,7 +61,7 @@ export abstract class Injector<CInj, RInj extends BaseRInj, ReqBody, ReqQueryPar
     event: APIGatewayProxyEvent,
     context: Context,
     log: Logger,
-    metrics: MetricsLogger
+    metrics: RoutingMetrics
   ): Promise<RInj>
 
   public abstract buildContainerInjected(): Promise<CInj>
@@ -83,11 +85,14 @@ const INTERNAL_ERROR = (id?: string) => {
   }
 }
 
+
+
+
 export abstract class APIGLambdaHandler<CInj, RInj extends BaseRInj, ReqBody, ReqQueryParams, Res> {
   constructor(
     private handlerName: string,
     private injectorPromise: Promise<Injector<CInj, RInj, ReqBody, ReqQueryParams>>
-  ) {}
+  ) { }
 
   get handler(): APIGatewayProxyHandler {
     return async (event: APIGatewayProxyEvent, context: Context): Promise<APIGatewayProxyResult> => {
@@ -109,19 +114,46 @@ export abstract class APIGLambdaHandler<CInj, RInj extends BaseRInj, ReqBody, Re
   }
 
   private buildHandler(): APIGatewayProxyHandler {
-    return metricScope(
-      (metric: MetricsLogger) =>
-        async (event: APIGatewayProxyEvent, context: Context): Promise<APIGatewayProxyResult> => {
+  const handlerWithMetrics = metricScope(
+    (metric: MetricsLogger) =>
+      async (event: APIGatewayProxyEvent, context: Context): Promise<APIGatewayProxyResult> => {
+        return this.executeHandler(event, context, metric)
+      }
+  )
+
+  const handlerWithoutMetrics = async (
+    event: APIGatewayProxyEvent,
+    context: Context
+  ): Promise<APIGatewayProxyResult> => {
+    return this.executeHandler(event, context, new NoopRoutingMetrics())
+  }
+
+  return async (event, context) => {
+    if (Math.random() < METRICS_SAMPLE_RATE) {
+      return handlerWithMetrics(event, context)
+    }
+
+    return handlerWithoutMetrics(event, context)
+  }
+}
+
+  private async executeHandler(
+      event: APIGatewayProxyEvent,
+      context: Context,
+      metric: RoutingMetrics
+      
+   ): Promise<APIGatewayProxyResult> {
           const requestStart = Date.now()
+          const LOG_LEVEL = (process.env.LOG_LEVEL as Logger.LogLevel) || 'warn'
 
           let log: Logger = bunyan.createLogger({
             name: this.handlerName,
             serializers: bunyan.stdSerializers,
-            level: bunyan.INFO,
+            level: LOG_LEVEL,
             requestId: context.awsRequestId,
           })
 
-          log.info({ event, context }, 'Request started.')
+          log.debug({ requestId: context.awsRequestId }, 'Request started')
 
           let requestBody: ReqBody
           let requestQueryParams: ReqQueryParams
@@ -161,7 +193,7 @@ export abstract class APIGLambdaHandler<CInj, RInj extends BaseRInj, ReqBody, Re
 
           const { id } = requestInjected
 
-          ;({ log } = requestInjected)
+          log.level(LOG_LEVEL)
 
           let statusCode: number
           let body: Res
@@ -177,21 +209,21 @@ export abstract class APIGLambdaHandler<CInj, RInj extends BaseRInj, ReqBody, Re
             })
 
             if (this.isError(handleRequestResult)) {
-              log.info({ handleRequestResult }, 'Handler did not return a 200')
+              log.debug({ handleRequestResult }, 'Handler did not return a 200')
               const { statusCode, detail, errorCode } = handleRequestResult
               const response = JSON.stringify({ detail, errorCode, id })
 
-              log.info({ statusCode, response }, `Request ended. ${statusCode}`)
+              log.debug({ statusCode, response }, `Request ended. ${statusCode}`)
               return {
                 statusCode,
                 body: response,
               }
             } else {
-              log.info(
+              log.debug(
                 { requestBody, requestQueryParams, requestDuration: Date.now() - requestStart },
                 'Handler returned 200'
               )
-              ;({ body, statusCode } = handleRequestResult)
+                ; ({ body, statusCode } = handleRequestResult)
             }
           } catch (err) {
             log.error({ err }, 'Unexpected error in handler')
@@ -212,7 +244,7 @@ export abstract class APIGLambdaHandler<CInj, RInj extends BaseRInj, ReqBody, Re
             return INTERNAL_ERROR(id)
           }
 
-          log.info({ statusCode, response }, `Request ended. ${statusCode}`)
+          log.debug({ statusCode, response }, `Request ended. ${statusCode}`)
 
           this.afterHandler(metric, response, requestStart)
 
@@ -221,10 +253,9 @@ export abstract class APIGLambdaHandler<CInj, RInj extends BaseRInj, ReqBody, Re
             body: JSON.stringify(response),
           }
         }
-    )
-  }
+  
 
-  protected afterHandler(_: MetricsLogger, __: Res, ___: number): void {}
+  protected afterHandler(_: RoutingMetrics, __: Res, ___: number): void {}
 
   public abstract handleRequest(
     params: HandleRequestParams<CInj, RInj, ReqBody, ReqQueryParams>
@@ -243,10 +274,10 @@ export abstract class APIGLambdaHandler<CInj, RInj extends BaseRInj, ReqBody, Re
     log: Logger
   ): Promise<
     | {
-        state: 'valid'
-        requestBody: ReqBody
-        requestQueryParams: ReqQueryParams
-      }
+      state: 'valid'
+      requestBody: ReqBody
+      requestQueryParams: ReqQueryParams
+    }
     | { state: 'invalid'; errorResponse: APIGatewayProxyResult }
   > {
     let bodyRaw: any
@@ -279,7 +310,7 @@ export abstract class APIGLambdaHandler<CInj, RInj extends BaseRInj, ReqBody, Re
       })
 
       if (queryParamsValidation.error) {
-        log.info({ queryParamsValidation }, 'Request failed validation')
+        log.debug({ queryParamsValidation }, 'Request failed validation')
         return {
           state: 'invalid',
           errorResponse: {
@@ -305,7 +336,7 @@ export abstract class APIGLambdaHandler<CInj, RInj extends BaseRInj, ReqBody, Re
       })
 
       if (bodyValidation.error) {
-        log.info({ bodyValidation }, 'Request failed validation')
+        log.error({ bodyValidation }, 'Request failed validation')
         return {
           state: 'invalid',
           errorResponse: {

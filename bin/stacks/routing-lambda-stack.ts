@@ -154,6 +154,8 @@ export class RoutingLambdaStack extends cdk.NestedStack {
         GQL_URL: uniGraphQLEndpoint,
         GQL_H_ORGN: uniGraphQLHeaderOrigin,
         ...jsonRpcProviders,
+        METRICS_SAMPLE_RATE: process.env.METRICS_SAMPLE_RATE ?? '0.05',
+        LOG_LEVEL: process.env.LOG_LEVEL ?? 'warn',
       },
       layers: [
         aws_lambda.LayerVersion.fromLayerVersionArn(
@@ -219,6 +221,8 @@ export class RoutingLambdaStack extends cdk.NestedStack {
         GQL_H_ORGN: uniGraphQLHeaderOrigin,
         CACHING_ROUTING_LAMBDA_FUNCTION_NAME: cachingRoutingLambda.functionName,
         ...jsonRpcProviders,
+        METRICS_SAMPLE_RATE: process.env.METRICS_SAMPLE_RATE ?? '0.05',
+        LOG_LEVEL: process.env.LOG_LEVEL ?? 'warn',
       },
       layers: [
         aws_lambda.LayerVersion.fromLayerVersionArn(

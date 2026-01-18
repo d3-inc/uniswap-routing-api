@@ -44,7 +44,8 @@ The best way to develop and test the API is to deploy your own instance to AWS.
    GQL_H_ORGN = '' # The GraphQL header origin, for Uniswap graphql query access
    ENVIRONMENT = '' # Add support to install another environment in the same account but different region
    #ROUTING_LAMBDA_MEMORY_SIZE = '1536' # Set lamdba default memory size
-   TRACING = 'false'
+   TRACING = 'false' # Set to true to enable tracing.
+   METRICS_SAMPLE_RATE = '0.05' # Log sampling rate (0 to 1). 0.05 sends 5% of logs, 1 sends all.
    ```
 3. Install and build the package
    ```

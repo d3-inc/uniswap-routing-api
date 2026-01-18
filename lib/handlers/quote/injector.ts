@@ -7,7 +7,7 @@ import {
   setGlobalLogger,
   setGlobalMetric,
   V3HeuristicGasModelFactory,
-} from '@uniswap/smart-order-router'
+} from '@baberswap/smart-order-router'
 import { MetricsLogger } from 'aws-embedded-metrics'
 import { APIGatewayProxyEvent, Context } from 'aws-lambda'
 import { default as bunyan, default as Logger } from 'bunyan'
@@ -51,11 +51,12 @@ export class QuoteHandlerInjector extends InjectorSOR<
     // All other requests will only log warnings and errors.
     // Note that we use WARN as a default rather than ERROR
     // to capture Tapcompare logs in the smart-order-router.
-    const logLevel = enableDebug ? bunyan.DEBUG : Math.random() < 0.1 ? bunyan.INFO : bunyan.WARN
+    const isSampled = Math.random() < 0.1;
+    const currentLogLevel = enableDebug ? bunyan.DEBUG : isSampled ? bunyan.INFO : log.level();
 
     log = log.child({
       serializers: bunyan.stdSerializers,
-      level: logLevel,
+      level: currentLogLevel,
       requestId,
       quoteId,
       tokenInAddress,
@@ -68,7 +69,7 @@ export class QuoteHandlerInjector extends InjectorSOR<
       activityId: activityId,
     })
     setGlobalLogger(log)
-
+    
     metricsLogger.setNamespace('Uniswap')
     metricsLogger.setDimensions({ Service: 'RoutingAPI' })
     const metric = new AWSMetricsLogger(metricsLogger)

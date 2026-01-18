@@ -405,6 +405,7 @@ export class RoutingCachingStack extends cdk.NestedStack {
             chainId: chainId.toString(),
             protocol,
             timeout: timeout.toString(),
+            METRICS_SAMPLE_RATE: process.env.METRICS_SAMPLE_RATE ?? '0.05',
           },
         }
       )
