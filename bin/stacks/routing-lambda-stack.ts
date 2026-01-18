@@ -102,7 +102,8 @@ export class RoutingLambdaStack extends cdk.NestedStack {
 
     const region = cdk.Stack.of(this).region
     const envRoutingLamdbaMemorySize = process.env.ROUTING_LAMBDA_MEMORY_SIZE ? parseInt(process.env.ROUTING_LAMBDA_MEMORY_SIZE, 10) : 2560;
-
+    const envSuffix = process.env.ENVIRONMENT ? `-${process.env.ENVIRONMENT}` : '';
+    
     const cachingRoutingLambda = new aws_lambda_nodejs.NodejsFunction(this, 'CachingRoutingLambda', {
       role: lambdaRole,
       runtime: aws_lambda.Runtime.NODEJS_18_X,
@@ -138,17 +139,17 @@ export class RoutingLambdaStack extends cdk.NestedStack {
         //          2023-09-01 10:22:43 UTC-0700RoutingLambda2CurrentVersion49A1BB948389ce4f9c26b15e2ccb07b4c1bab726CREATE_FAILED
         //          A version for this Lambda function exists ( 261 ). Modify the function to create a new version.
         //          Hence we do not want to modify the table name below.
-        ROUTES_TABLE_NAME: DynamoDBTableProps.RoutesDbTable.Name,
-        ROUTES_CACHING_REQUEST_FLAG_TABLE_NAME: DynamoDBTableProps.RoutesDbCachingRequestFlagTable.Name,
-        CACHED_ROUTES_TABLE_NAME: DynamoDBTableProps.CacheRouteDynamoDbTable.Name,
-        CACHING_REQUEST_FLAG_TABLE_NAME: DynamoDBTableProps.CachingRequestFlagDynamoDbTable.Name,
-        CACHED_V3_POOLS_TABLE_NAME: DynamoDBTableProps.V3PoolsDynamoDbTable.Name,
-        V2_PAIRS_CACHE_TABLE_NAME: DynamoDBTableProps.V2PairsDynamoCache.Name,
-        RPC_PROVIDER_HEALTH_TABLE_NAME: DynamoDBTableProps.RpcProviderHealthStateDbTable.Name,
+        ROUTES_TABLE_NAME: `DynamoDBTableProps.RoutesDbTable.Name${envSuffix}`,
+        ROUTES_CACHING_REQUEST_FLAG_TABLE_NAME: `DynamoDBTableProps.RoutesDbCachingRequestFlagTable.Name${envSuffix}`,
+        CACHED_ROUTES_TABLE_NAME: `DynamoDBTableProps.CacheRouteDynamoDbTable.Name${envSuffix}`,
+        CACHING_REQUEST_FLAG_TABLE_NAME: `DynamoDBTableProps.CachingRequestFlagDynamoDbTable.Name${envSuffix}`,
+        CACHED_V3_POOLS_TABLE_NAME: `DynamoDBTableProps.V3PoolsDynamoDbTable.Name${envSuffix}`,
+        V2_PAIRS_CACHE_TABLE_NAME: `DynamoDBTableProps.V2PairsDynamoCache.Name${envSuffix}`,
+        RPC_PROVIDER_HEALTH_TABLE_NAME: `DynamoDBTableProps.RpcProviderHealthStateDbTable.Name${envSuffix}`,
 
         // tokenPropertiesCachingDynamoDb.tableName is the correct format.
         // we will start using the correct ones going forward
-        TOKEN_PROPERTIES_CACHING_TABLE_NAME: tokenPropertiesCachingDynamoDb.tableName,
+        TOKEN_PROPERTIES_CACHING_TABLE_NAME: `tokenPropertiesCachingDynamoDb.tableName${envSuffix}`,
         UNICORN_SECRET: unicornSecret,
         GQL_URL: uniGraphQLEndpoint,
         GQL_H_ORGN: uniGraphQLHeaderOrigin,
@@ -202,17 +203,17 @@ export class RoutingLambdaStack extends cdk.NestedStack {
         //          2023-09-01 10:22:43 UTC-0700RoutingLambda2CurrentVersion49A1BB948389ce4f9c26b15e2ccb07b4c1bab726CREATE_FAILED
         //          A version for this Lambda function exists ( 261 ). Modify the function to create a new version.
         //          Hence we do not want to modify the table name below.
-        ROUTES_TABLE_NAME: DynamoDBTableProps.RoutesDbTable.Name,
-        ROUTES_CACHING_REQUEST_FLAG_TABLE_NAME: DynamoDBTableProps.RoutesDbCachingRequestFlagTable.Name,
-        CACHED_ROUTES_TABLE_NAME: DynamoDBTableProps.CacheRouteDynamoDbTable.Name,
-        CACHING_REQUEST_FLAG_TABLE_NAME: DynamoDBTableProps.CachingRequestFlagDynamoDbTable.Name,
-        CACHED_V3_POOLS_TABLE_NAME: DynamoDBTableProps.V3PoolsDynamoDbTable.Name,
-        V2_PAIRS_CACHE_TABLE_NAME: DynamoDBTableProps.V2PairsDynamoCache.Name,
-        RPC_PROVIDER_HEALTH_TABLE_NAME: DynamoDBTableProps.RpcProviderHealthStateDbTable.Name,
+        ROUTES_TABLE_NAME: `DynamoDBTableProps.RoutesDbTable.Name${envSuffix}`,
+        ROUTES_CACHING_REQUEST_FLAG_TABLE_NAME: `DynamoDBTableProps.RoutesDbCachingRequestFlagTable.Name${envSuffix}`,
+        CACHED_ROUTES_TABLE_NAME: `DynamoDBTableProps.CacheRouteDynamoDbTable.Name${envSuffix}`,
+        CACHING_REQUEST_FLAG_TABLE_NAME: `DynamoDBTableProps.CachingRequestFlagDynamoDbTable.Name${envSuffix}`,
+        CACHED_V3_POOLS_TABLE_NAME: `DynamoDBTableProps.V3PoolsDynamoDbTable.Name${envSuffix}`,
+        V2_PAIRS_CACHE_TABLE_NAME: `DynamoDBTableProps.V2PairsDynamoCache.Name${envSuffix}`,
+        RPC_PROVIDER_HEALTH_TABLE_NAME: `DynamoDBTableProps.RpcProviderHealthStateDbTable.Name${envSuffix}`,
 
         // tokenPropertiesCachingDynamoDb.tableName is the correct format.
         // we will start using the correct ones going forward
-        TOKEN_PROPERTIES_CACHING_TABLE_NAME: tokenPropertiesCachingDynamoDb.tableName,
+        TOKEN_PROPERTIES_CACHING_TABLE_NAME: `tokenPropertiesCachingDynamoDb.tableName${envSuffix}`,
         UNICORN_SECRET: unicornSecret,
         GQL_URL: uniGraphQLEndpoint,
         GQL_H_ORGN: uniGraphQLHeaderOrigin,
