@@ -101,6 +101,7 @@ export class RoutingLambdaStack extends cdk.NestedStack {
     rpcProviderHealthStateDynamoDb.grantReadWriteData(lambdaRole)
 
     const region = cdk.Stack.of(this).region
+    const envRoutingLamdbaMemorySize = process.env.ROUTING_LAMBDA_MEMORY_SIZE ? parseInt(process.env.ROUTING_LAMBDA_MEMORY_SIZE, 10) : 2560;
 
     const cachingRoutingLambda = new aws_lambda_nodejs.NodejsFunction(this, 'CachingRoutingLambda', {
       role: lambdaRole,
@@ -109,7 +110,7 @@ export class RoutingLambdaStack extends cdk.NestedStack {
       handler: 'quoteHandler',
       // 04/18/2025: async routing lambda can have much longer timeout
       timeout: cdk.Duration.seconds(30),
-      memorySize: 2560,
+      memorySize: envRoutingLamdbaMemorySize,
       deadLetterQueueEnabled: true,
       bundling: {
         minify: true,
@@ -173,7 +174,7 @@ export class RoutingLambdaStack extends cdk.NestedStack {
       // Set this lambda's timeout to be slightly lower to give them time to
       // log the response in the event of a failure on our end.
       timeout: cdk.Duration.seconds(9),
-      memorySize: 2560,
+      memorySize: envRoutingLamdbaMemorySize,
       deadLetterQueueEnabled: true,
       bundling: {
         minify: true,
