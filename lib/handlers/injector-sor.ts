@@ -383,6 +383,8 @@ export abstract class InjectorSOR<Router, QueryParams> extends Injector<
             case ChainId.UNICHAIN:
             case ChainId.SONEIUM:
             case ChainId.XLAYER:
+            case ChainId.DOMA_SEPOLIA:
+            case ChainId.DOMA:
             default:
               const currentQuoteProvider = new OnChainQuoteProvider(
                 chainId,
