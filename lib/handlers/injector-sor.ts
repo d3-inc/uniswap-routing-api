@@ -66,7 +66,7 @@ import { DefaultEVMClient } from './evm/EVMClient'
 import { InstrumentedEVMProvider } from './evm/provider/InstrumentedEVMProvider'
 import { deriveProviderName } from './evm/provider/ProviderName'
 import { V2DynamoCache } from './pools/pool-caching/v2/v2-dynamo-cache'
-import { OnChainTokenFeeFetcher } from '@uniswap/smart-order-router/build/main/providers/token-fee-fetcher'
+import { DEFAULT_TOKEN_FEE_RESULT, ITokenFeeFetcher, TokenFeeMap } from '@uniswap/smart-order-router/build/main/providers/token-fee-fetcher'
 import { PortionProvider } from '@uniswap/smart-order-router/build/main/providers/portion-provider'
 import { GlobalRpcProviders } from '../rpc/GlobalRpcProviders'
 import { StaticJsonRpcProvider } from '@ethersproject/providers'
@@ -83,15 +83,16 @@ import { v4 } from 'uuid/index'
 import { chainProtocols } from '../cron/cache-config'
 import { Protocol } from '@uniswap/router-sdk'
 import { UniJsonRpcProvider } from '../rpc/UniJsonRpcProvider'
-import { GraphQLTokenFeeFetcher } from '../graphql/graphql-token-fee-fetcher'
-import { UniGraphQLProvider } from '../graphql/graphql-provider'
-import { TrafficSwitcherITokenFeeFetcher } from '../util/traffic-switch/traffic-switcher-i-token-fee-fetcher'
+// import { GraphQLTokenFeeFetcher } from '../graphql/graphql-token-fee-fetcher'
+// import { UniGraphQLProvider } from '../graphql/graphql-provider'
+// import { TrafficSwitcherITokenFeeFetcher } from '../util/traffic-switch/traffic-switcher-i-token-fee-fetcher'
 import {
   emptyV4FeeTickSpacingsHookAddresses,
   EXTRA_V4_FEE_TICK_SPACINGS_HOOK_ADDRESSES,
 } from '../util/extraV4FeeTiersTickSpacingsHookAddresses'
 import { NEW_CACHED_ROUTES_ROLLOUT_PERCENT } from '../util/newCachedRoutesRolloutPercent'
 import { TENDERLY_NEW_ENDPOINT_ROLLOUT_PERCENT } from '../util/tenderlyNewEndpointRolloutPercent'
+import { ProviderConfig } from '@uniswap/smart-order-router/build/main/providers/provider'
 
 export const SUPPORTED_CHAINS: ChainId[] = [
   // ChainId.MAINNET,
@@ -167,6 +168,21 @@ export interface ContainerInjected {
     [chainId in ChainId]?: ContainerDependencies
   }
   activityId?: string
+}
+
+// On Doma chain, FOT tokens are not support
+// This token fee fetcher is used to avoid on-chain lookups
+class NoOpTokenFeeFetcher implements ITokenFeeFetcher {
+  async fetchFees(
+    addresses: string[],
+    _providerConfig?: ProviderConfig
+  ): Promise<TokenFeeMap> {
+    const result: TokenFeeMap = {};
+    for(const address of addresses) {
+      result[address] = DEFAULT_TOKEN_FEE_RESULT;
+    }
+    return result;
+  }
 }
 
 export abstract class InjectorSOR<Router, QueryParams> extends Injector<
@@ -281,22 +297,24 @@ export abstract class InjectorSOR<Router, QueryParams> extends Injector<
             sourceOfTruthPoolProvider: noCacheV3PoolProvider,
           })
 
-          const onChainTokenFeeFetcher = new OnChainTokenFeeFetcher(chainId, provider)
-          const graphQLTokenFeeFetcher = new GraphQLTokenFeeFetcher(
-            new UniGraphQLProvider(),
-            onChainTokenFeeFetcher,
-            chainId
-          )
-          const trafficSwitcherTokenFetcher = new TrafficSwitcherITokenFeeFetcher('TokenFetcherExperimentV2', {
-            control: graphQLTokenFeeFetcher,
-            treatment: onChainTokenFeeFetcher,
-            aliasControl: 'graphQLTokenFeeFetcher',
-            aliasTreatment: 'onChainTokenFeeFetcher',
-            customization: {
-              pctEnabled: 0.0,
-              pctShadowSampling: 0.005,
-            },
-          })
+          const noOpTokenFeeFetcher = new NoOpTokenFeeFetcher()
+          // Not used on doma chains:
+          // const onChainTokenFeeFetcher = new OnChainTokenFeeFetcher(chainId, provider)
+          // const graphQLTokenFeeFetcher = new GraphQLTokenFeeFetcher(
+          //   new UniGraphQLProvider(),
+          //   onChainTokenFeeFetcher,
+          //   chainId
+          // )
+          // const trafficSwitcherTokenFetcher = new TrafficSwitcherITokenFeeFetcher('TokenFetcherExperimentV2', {
+          //   control: graphQLTokenFeeFetcher,
+          //   treatment: onChainTokenFeeFetcher,
+          //   aliasControl: 'graphQLTokenFeeFetcher',
+          //   aliasTreatment: 'onChainTokenFeeFetcher',
+          //   customization: {
+          //     pctEnabled: 0.0,
+          //     pctShadowSampling: 0.005,
+          //   },
+          // })
 
           const tokenValidatorProvider = new TokenValidatorProvider(
             chainId,
@@ -306,7 +324,7 @@ export abstract class InjectorSOR<Router, QueryParams> extends Injector<
           const tokenPropertiesProvider = new TokenPropertiesProvider(
             chainId,
             new NodeJSCache(new NodeCache({ stdTTL: 30000, useClones: false })),
-            trafficSwitcherTokenFetcher
+            noOpTokenFeeFetcher
           )
           const underlyingV2PoolProvider = new V2PoolProvider(chainId, multicall2Provider, tokenPropertiesProvider)
           const v2PoolProvider = new CachingV2PoolProvider(
