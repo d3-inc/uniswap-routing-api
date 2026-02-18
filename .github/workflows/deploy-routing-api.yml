@@ -6,6 +6,8 @@ on:
 permissions:
   id-token: write
   contents: read
+  packages: read
+
 env:
   NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
 
@@ -35,11 +37,22 @@ jobs:
       - name: Build project
         run: npm run build
 
+      - name: Select AWS region based on branch
+        run: |
+          if [ "${GITHUB_REF_NAME}" = "main" ]; then
+            echo "AWS_REGION=us-west-1" >> $GITHUB_ENV
+          else
+            echo "AWS_REGION=us-east-2" >> $GITHUB_ENV
+          fi
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Show selected AWS region
+        run: echo "Deploying to region:" $AWS_REGION
 
       - name: Install CDK CLI
         run: npm install -g aws-cdk@2.1029.0
