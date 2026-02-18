@@ -27,10 +27,8 @@ jobs:
           scope: '@d3-inc'
 
       - name: Create .env file
-        run: |
-          printf "%s" "${{ secrets.DOTENV }}" > .env
-          cat .env
-
+        run: printf "%s" "${{ secrets.DOTENV }}" > .env
+        
       - name: Install dependencies
         run: npm install
 
