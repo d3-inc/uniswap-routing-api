@@ -6,6 +6,8 @@ on:
 permissions:
   id-token: write
   contents: read
+env:
+  NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
   deploy:
@@ -21,9 +23,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          registry-url: https://npm.pkg.github.com
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@d3-inc'
 
       - name: Create .env file
         run: printf "%s" "${{ secrets.DOTENV }}" > .env
