@@ -67,7 +67,9 @@ export class TrafficSwitchV3PoolProvider implements IV3PoolProvider {
     } else {
       metric.putMetric('V3_POOL_PROVIDER_POOL_TRAFFIC_CURRENT', 1, MetricLoggerUnit.None)
 
-      return currentProviderPools ?? (await this.currentPoolProvider.getPools(tokenPairs, providerConfig))
+      const pools = currentProviderPools ?? (await this.currentPoolProvider.getPools(tokenPairs, providerConfig))
+      log.info({pools},`Returning pools from the current provider.`)
+      return pools
     }
   }
 
