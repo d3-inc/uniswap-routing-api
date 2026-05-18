@@ -293,13 +293,13 @@ export const OPTIMISTIC_CACHED_ROUTES_BATCH_PARAMS: { [protocol in Protocol]: { 
       quoteMinSuccessRate: 0.1,
     },
     [ChainId.DOMA_SEPOLIA]: {
-      multicallChunk: 5,
-      gasLimitPerCall: 10_000_000,
+      multicallChunk: 10,
+      gasLimitPerCall: 5_000_000,
       quoteMinSuccessRate: 0.1,
     },
     [ChainId.DOMA]: {
-      multicallChunk: 5,
-      gasLimitPerCall: 10_000_000,
+      multicallChunk: 10,
+      gasLimitPerCall: 5_000_000,
       quoteMinSuccessRate: 0.1,
     },
   },
@@ -702,13 +702,13 @@ export const NON_OPTIMISTIC_CACHED_ROUTES_BATCH_PARAMS: { [protocol in Protocol]
         quoteMinSuccessRate: 0.1,
       },
       [ChainId.DOMA_SEPOLIA]: {
-        multicallChunk: 5,
-        gasLimitPerCall: 10_000_000,
+        multicallChunk: 10,
+        gasLimitPerCall: 5_000_000,
         quoteMinSuccessRate: 0.1,
       },
       [ChainId.DOMA]: {
-        multicallChunk: 5,
-        gasLimitPerCall: 10_000_000,
+        multicallChunk: 10,
+        gasLimitPerCall: 5_000_000,
         quoteMinSuccessRate: 0.1,
       },
     },
@@ -970,12 +970,12 @@ export const GAS_ERROR_FAILURE_OVERRIDES: { [chainId: number]: FailureOverrides 
     multicallChunk: 45,
   },
   [ChainId.DOMA_SEPOLIA]: {
-    gasLimitOverride: 15_000_000,
-    multicallChunk: 3,
+    gasLimitOverride: 10_000_000,
+    multicallChunk: 4,
   },
   [ChainId.DOMA]: {
-    gasLimitOverride: 15_000_000,
-    multicallChunk: 3,
+    gasLimitOverride: 10_000_000,
+    multicallChunk: 4,
   },
 }
 
@@ -1034,12 +1034,12 @@ export const SUCCESS_RATE_FAILURE_OVERRIDES: { [chainId: number]: FailureOverrid
     multicallChunk: 45,
   },
   [ChainId.DOMA_SEPOLIA]: {
-    gasLimitOverride: 15_000_000,
-    multicallChunk: 3,
+    gasLimitOverride: 50_000_000,
+    multicallChunk: 1,
   },
   [ChainId.DOMA]: {
-    gasLimitOverride: 15_000_000,
-    multicallChunk: 3,
+    gasLimitOverride: 50_000_000,
+    multicallChunk: 1,
   },
 }
 
