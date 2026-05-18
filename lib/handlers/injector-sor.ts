@@ -280,22 +280,23 @@ export abstract class InjectorSOR<Router, QueryParams> extends Injector<
           )
 
           const noCacheV3PoolProvider = new V3PoolProvider(chainId, multicall2Provider)
-          const inMemoryCachingV3PoolProvider = new CachingV3PoolProvider(
-            chainId,
-            noCacheV3PoolProvider,
-            new NodeJSCache(new NodeCache({ stdTTL: 180, useClones: false }))
-          )
-          const dynamoCachingV3PoolProvider = new DynamoDBCachingV3PoolProvider(
-            chainId,
-            noCacheV3PoolProvider,
-            'V3PoolsCachingDB'
-          )
+          const v3PoolProvider = noCacheV3PoolProvider;
+          // const inMemoryCachingV3PoolProvider = new CachingV3PoolProvider(
+          //   chainId,
+          //   noCacheV3PoolProvider,
+          //   new NodeJSCache(new NodeCache({ stdTTL: 180, useClones: false }))
+          // )
+          // const dynamoCachingV3PoolProvider = new DynamoDBCachingV3PoolProvider(
+          //   chainId,
+          //   noCacheV3PoolProvider,
+          //   'V3PoolsCachingDB'
+          // )
 
-          const v3PoolProvider = new TrafficSwitchV3PoolProvider({
-            currentPoolProvider: inMemoryCachingV3PoolProvider,
-            targetPoolProvider: dynamoCachingV3PoolProvider,
-            sourceOfTruthPoolProvider: noCacheV3PoolProvider,
-          })
+          // const v3PoolProvider = new TrafficSwitchV3PoolProvider({
+          //   currentPoolProvider: inMemoryCachingV3PoolProvider,
+          //   targetPoolProvider: dynamoCachingV3PoolProvider,
+          //   sourceOfTruthPoolProvider: noCacheV3PoolProvider,
+          // })
 
           const noOpTokenFeeFetcher = new NoOpTokenFeeFetcher()
           // Not used on doma chains:
