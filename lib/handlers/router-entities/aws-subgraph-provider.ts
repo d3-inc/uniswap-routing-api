@@ -30,7 +30,7 @@ export class AWSSubgraphProvider<TSubgraphPool extends V2SubgraphPool | V3Subgra
 
     if (cachedPools) {
       log.info(
-        { subgraphPoolsSample: cachedPools },
+        { subgraphPoolsSample: cachedPools.slice(0, 5) },
         `Subgraph pools fetched from local cache for protocol ${this.protocol}. Num: ${cachedPools.length}`
       )
 
