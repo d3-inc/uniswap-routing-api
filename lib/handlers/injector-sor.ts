@@ -53,11 +53,11 @@ import _ from 'lodash'
 import NodeCache from 'node-cache'
 import UNSUPPORTED_TOKEN_LIST from './../config/unsupported.tokenlist.json'
 import { BaseRInj, Injector } from './handler'
-import {
-  V2AWSSubgraphProvider,
-  V3AWSSubgraphProvider,
-  V4AWSSubgraphProvider,
-} from './router-entities/aws-subgraph-provider'
+// import {
+//   V2AWSSubgraphProvider,
+//   V3AWSSubgraphProvider,
+//   V4AWSSubgraphProvider,
+// } from './router-entities/aws-subgraph-provider'
 import { AWSTokenListProvider } from './router-entities/aws-token-list-provider'
 import { DynamoRouteCachingProvider } from './router-entities/route-caching/dynamo-route-caching-provider'
 import { DynamoDBCachingV3PoolProvider } from './pools/pool-caching/v3/dynamo-caching-pool-provider'
@@ -80,7 +80,7 @@ import {
   SUCCESS_RATE_FAILURE_OVERRIDES,
 } from '../util/onChainQuoteProviderConfigs'
 import { v4 } from 'uuid/index'
-import { chainProtocols } from '../cron/cache-config'
+// import { chainProtocols } from '../cron/cache-config'
 import { Protocol } from '@uniswap/router-sdk'
 import { UniJsonRpcProvider } from '../rpc/UniJsonRpcProvider'
 // import { GraphQLTokenFeeFetcher } from '../graphql/graphql-token-fee-fetcher'
@@ -352,21 +352,21 @@ export abstract class InjectorSOR<Router, QueryParams> extends Injector<
               POOL_CACHE_GZIP_KEY!,
               v4PoolProvider,
               v4PoolParams
-            )) as V4AWSSubgraphProvider,
+            )) as StaticV4SubgraphProvider,
             (await this.instantiateSubgraphProvider(
               chainId,
               Protocol.V3,
               POOL_CACHE_BUCKET_3!,
               POOL_CACHE_GZIP_KEY!,
               v3PoolProvider
-            )) as V3AWSSubgraphProvider,
+            )) as StaticV3SubgraphProvider,
             (await this.instantiateSubgraphProvider(
               chainId,
               Protocol.V2,
               POOL_CACHE_BUCKET_3!,
               POOL_CACHE_GZIP_KEY!,
               v2PoolProvider
-            )) as V2AWSSubgraphProvider,
+            )) as StaticV2SubgraphProvider,
           ])
 
           const tokenProvider = new CachingTokenProviderWithFallback(
@@ -688,8 +688,8 @@ export abstract class InjectorSOR<Router, QueryParams> extends Injector<
   private async instantiateSubgraphProvider(
     chainId: ChainId,
     protocol: Protocol,
-    poolCacheBucket: string,
-    poolCacheKey: string,
+    _poolCacheBucket: string,
+    _poolCacheKey: string,
     poolProvider: IV2PoolProvider | IV3PoolProvider | IV4PoolProvider,
     v4PoolsParams?: Array<[number, number, string]>
   ) {
