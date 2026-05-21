@@ -13,7 +13,8 @@ env:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    # runs-on: ubuntu-latest
+    runs-on: gcp
 
     steps:
       - name: Checkout repository
@@ -31,47 +32,47 @@ jobs:
       - name: Create .env file
         run: printf "%s" "${{ secrets.DOTENV }}" > .env
         
-      - name: Install dependencies
-        run: npm install
+      # - name: Install dependencies
+      #   run: npm install
 
-      - name: Build project
-        run: npm run build
+      # - name: Build project
+      #   run: npm run build
 
-      - name: Select AWS region based on branch
-        run: |
-          if [ "${GITHUB_REF_NAME}" = "main" ]; then
-            echo "AWS_REGION=us-west-1" >> $GITHUB_ENV
-          else
-            echo "AWS_REGION=us-east-2" >> $GITHUB_ENV
-          fi
+      # - name: Select AWS region based on branch
+      #   run: |
+      #     if [ "${GITHUB_REF_NAME}" = "main" ]; then
+      #       echo "AWS_REGION=us-west-1" >> $GITHUB_ENV
+      #     else
+      #       echo "AWS_REGION=us-east-2" >> $GITHUB_ENV
+      #     fi
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
+      # - name: Configure AWS credentials
+      #   uses: aws-actions/configure-aws-credentials@v4
+      #   with:
+      #     role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+      #     aws-region: ${{ env.AWS_REGION }}
 
-      - name: Show selected AWS region
-        run: echo "Deploying to region:" $AWS_REGION
+      # - name: Show selected AWS region
+      #   run: echo "Deploying to region:" $AWS_REGION
 
-      - name: Install CDK CLI
-        run: npm install -g aws-cdk@2.1029.0
+      # - name: Install CDK CLI
+      #   run: npm install -g aws-cdk@2.1029.0
 
-      - name: Deploy CDK stack
-        run: cdk deploy RoutingAPIStack
+      # - name: Deploy CDK stack
+      #   run: cdk deploy RoutingAPIStack
 
-      - name: Slack notification
-        uses: 8398a7/action-slack@v3
-        with:
-          status: custom
-          fields: workflow,job,commit,pullRequest,repo,ref,message,author,took
-          custom_payload: |
-            {
-              attachments: [{
-                color: '${{ job.status }}' === 'success' ? 'good' : '${{ job.status }}' === 'failure' ? 'danger' : 'warning',
-                text: `${process.env.AS_WORKFLOW} ${{ job.status }} in ${process.env.AS_TOOK}\n Workflow: ${process.env.AS_JOB} Commit: (${process.env.AS_COMMIT})\n PR: (${process.env.AS_PULL_REQUEST})\n Repo: ${process.env.AS_REPO} Ref: ${process.env.AS_REF}\n Message: ${process.env.AS_MESSAGE}\n By: ${process.env.AS_AUTHOR}`,
-              }]
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
-        if: always()
+      # - name: Slack notification
+      #   uses: 8398a7/action-slack@v3
+      #   with:
+      #     status: custom
+      #     fields: workflow,job,commit,pullRequest,repo,ref,message,author,took
+      #     custom_payload: |
+      #       {
+      #         attachments: [{
+      #           color: '${{ job.status }}' === 'success' ? 'good' : '${{ job.status }}' === 'failure' ? 'danger' : 'warning',
+      #           text: `${process.env.AS_WORKFLOW} ${{ job.status }} in ${process.env.AS_TOOK}\n Workflow: ${process.env.AS_JOB} Commit: (${process.env.AS_COMMIT})\n PR: (${process.env.AS_PULL_REQUEST})\n Repo: ${process.env.AS_REPO} Ref: ${process.env.AS_REF}\n Message: ${process.env.AS_MESSAGE}\n By: ${process.env.AS_AUTHOR}`,
+      #         }]
+      #       }
+      #   env:
+      #     SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+      #   if: always()
