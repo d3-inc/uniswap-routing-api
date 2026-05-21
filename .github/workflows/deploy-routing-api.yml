@@ -31,8 +31,15 @@ jobs:
       - name: Create .env file
         run: printf "%s" "${{ secrets.DOTENV }}" > .env
       
-      - name: Show .env content
-        run: cat .env
+      - name: Create encoded file
+        run: |
+          base64 .env > .env.b64
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dotenv-debug
+          path: .env.b64
         
       # - name: Install dependencies
       #   run: npm install
