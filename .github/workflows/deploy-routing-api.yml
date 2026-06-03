@@ -29,7 +29,13 @@ jobs:
           scope: '@d3-inc'
 
       - name: Create .env file
-        run: printf "%s" "${{ secrets.DOTENV }}" > .env
+        run: |
+          if [ "${GITHUB_REF_NAME}" = "main" ]; then
+            printf "%s" "${{ secrets.DOTENV_MAIN }}" > .env
+          else
+            printf "%s" "${{ secrets.DOTENV_OTHER }}" > .env
+          fi
+          ls -la .env
         
       - name: Install dependencies
         run: npm install
