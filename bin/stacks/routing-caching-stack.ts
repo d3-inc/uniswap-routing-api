@@ -33,6 +33,8 @@ export interface RoutingCachingStackProps extends cdk.NestedStackProps {
   graphXlayerV3Id?: string
   graphXLayerV2Id?: string
   graphBearerToken?: string
+  graphBearerToken97476?: string
+  graphBearerToken97477?: string
   goldskyBearerToken?: string
   goldskyApiKey?: string
   // Goldsky V2 subgraph IDs
@@ -97,6 +99,8 @@ export class RoutingCachingStack extends cdk.NestedStack {
   public readonly graphXlayerV3Id: string | undefined = undefined
   public readonly graphXLayerV2Id: string | undefined = undefined
   public readonly graphBearerToken: string | undefined = undefined
+  public readonly graphBearerToken97476: string | undefined = undefined
+  public readonly graphBearerToken97477: string | undefined = undefined
   public readonly goldskyBearerToken: string | undefined = undefined
   public readonly goldskyApiKey: string | undefined = undefined
   // Goldsky V2 subgraph IDs
@@ -157,6 +161,8 @@ export class RoutingCachingStack extends cdk.NestedStack {
       graphXlayerV3Id,
       graphXLayerV2Id,
       graphBearerToken,
+      graphBearerToken97476,
+      graphBearerToken97477,
       goldskyApiKey,
       goldskyBearerToken,
       // Goldsky V2 subgraph IDs
@@ -215,6 +221,8 @@ export class RoutingCachingStack extends cdk.NestedStack {
     this.graphXlayerV3Id = graphXlayerV3Id
     this.graphXLayerV2Id = graphXLayerV2Id
     this.graphBearerToken = graphBearerToken
+    this.graphBearerToken97476 = graphBearerToken97476
+    this.graphBearerToken97477 = graphBearerToken97477
     this.goldskyApiKey = goldskyApiKey
     this.goldskyBearerToken = goldskyBearerToken
     // Goldsky V2 subgraph IDs
@@ -350,6 +358,8 @@ export class RoutingCachingStack extends cdk.NestedStack {
             GRAPH_XLAYER_V3_ID: this.graphXlayerV3Id ?? '',
             GRAPH_XLAYER_V2_ID: this.graphXLayerV2Id ?? '',
             GRAPH_BEARER_TOKEN: this.graphBearerToken ?? '',
+            GRAPH_BEARER_TOKEN_97476: this.graphBearerToken97476 ?? '',
+            GRAPH_BEARER_TOKEN_97477: this.graphBearerToken97477 ?? '',
             GOLD_SKY_BEARER_TOKEN: this.goldskyBearerToken ?? '',
             GOLD_SKY_API_KEY: this.goldskyApiKey ?? '',
             // Goldsky V2 subgraph IDs
