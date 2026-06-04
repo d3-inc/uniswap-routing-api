@@ -53,11 +53,11 @@ import _ from 'lodash'
 import NodeCache from 'node-cache'
 import UNSUPPORTED_TOKEN_LIST from './../config/unsupported.tokenlist.json'
 import { BaseRInj, Injector } from './handler'
-// import {
-//   V2AWSSubgraphProvider,
-//   V3AWSSubgraphProvider,
-//   V4AWSSubgraphProvider,
-// } from './router-entities/aws-subgraph-provider'
+import {
+  V2AWSSubgraphProvider,
+  V3AWSSubgraphProvider,
+  V4AWSSubgraphProvider,
+} from './router-entities/aws-subgraph-provider'
 import { AWSTokenListProvider } from './router-entities/aws-token-list-provider'
 import { DynamoRouteCachingProvider } from './router-entities/route-caching/dynamo-route-caching-provider'
 import { DynamoDBCachingV3PoolProvider } from './pools/pool-caching/v3/dynamo-caching-pool-provider'
@@ -80,7 +80,7 @@ import {
   SUCCESS_RATE_FAILURE_OVERRIDES,
 } from '../util/onChainQuoteProviderConfigs'
 import { v4 } from 'uuid/index'
-// import { chainProtocols } from '../cron/cache-config'
+import { chainProtocols } from '../cron/cache-config'
 import { Protocol } from '@uniswap/router-sdk'
 import { UniJsonRpcProvider } from '../rpc/UniJsonRpcProvider'
 // import { GraphQLTokenFeeFetcher } from '../graphql/graphql-token-fee-fetcher'
@@ -688,12 +688,32 @@ export abstract class InjectorSOR<Router, QueryParams> extends Injector<
   private async instantiateSubgraphProvider(
     chainId: ChainId,
     protocol: Protocol,
-    _poolCacheBucket: string,
-    _poolCacheKey: string,
+    poolCacheBucket: string,
+    poolCacheKey: string,
     poolProvider: IV2PoolProvider | IV3PoolProvider | IV4PoolProvider,
     v4PoolsParams?: Array<[number, number, string]>
   ) {
-    switch (protocol) {
+    try {
+      const chainProtocol = chainProtocols.find(
+        (chainProtocol) => chainProtocol.chainId === chainId && chainProtocol.protocol === protocol
+      )
+
+      if (!chainProtocol) {
+        throw new Error(`Chain protocol not found for chain ${chainId} and protocol ${protocol}`)
+      }
+
+      switch (protocol) {
+        case Protocol.V4:
+          return await V4AWSSubgraphProvider.EagerBuild(poolCacheBucket!, poolCacheKey!, chainId)
+        case Protocol.V3:
+          return await V3AWSSubgraphProvider.EagerBuild(poolCacheBucket!, poolCacheKey!, chainId)
+        case Protocol.V2:
+          return await V2AWSSubgraphProvider.EagerBuild(poolCacheBucket!, poolCacheKey!, chainId)
+        default:
+          throw new Error(`Unsupported protocol ${protocol} for chain ${chainId} to instantiate subgraph provider`)
+      }
+    } catch (err) {
+      switch (protocol) {
         case Protocol.V4:
           return new StaticV4SubgraphProvider(chainId, poolProvider as IV4PoolProvider, v4PoolsParams)
         case Protocol.V3:
@@ -703,37 +723,6 @@ export abstract class InjectorSOR<Router, QueryParams> extends Injector<
         default:
           throw new Error(`Unsupported protocol ${protocol} for chain ${chainId} to instantiate subgraph provider`)
       }
-
-    // try {
-    //   const chainProtocol = chainProtocols.find(
-    //     (chainProtocol) => chainProtocol.chainId === chainId && chainProtocol.protocol === protocol
-    //   )
-
-    //   if (!chainProtocol) {
-    //     throw new Error(`Chain protocol not found for chain ${chainId} and protocol ${protocol}`)
-    //   }
-
-    //   switch (protocol) {
-    //     case Protocol.V4:
-    //       return await V4AWSSubgraphProvider.EagerBuild(poolCacheBucket!, poolCacheKey!, chainId)
-    //     case Protocol.V3:
-    //       return await V3AWSSubgraphProvider.EagerBuild(poolCacheBucket!, poolCacheKey!, chainId)
-    //     case Protocol.V2:
-    //       return await V2AWSSubgraphProvider.EagerBuild(poolCacheBucket!, poolCacheKey!, chainId)
-    //     default:
-    //       throw new Error(`Unsupported protocol ${protocol} for chain ${chainId} to instantiate subgraph provider`)
-    //   }
-    // } catch (err) {
-    //   switch (protocol) {
-    //     case Protocol.V4:
-    //       return new StaticV4SubgraphProvider(chainId, poolProvider as IV4PoolProvider, v4PoolsParams)
-    //     case Protocol.V3:
-    //       return new StaticV3SubgraphProvider(chainId, poolProvider as IV3PoolProvider)
-    //     case Protocol.V2:
-    //       return new StaticV2SubgraphProvider(chainId)
-    //     default:
-    //       throw new Error(`Unsupported protocol ${protocol} for chain ${chainId} to instantiate subgraph provider`)
-    //   }
-    // }
+    }
   }
 }

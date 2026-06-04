@@ -1,5 +1,5 @@
 import { Protocol } from '@uniswap/router-sdk'
-import { V2SubgraphProvider, V3SubgraphProvider, V4SubgraphProvider } from '@uniswap/smart-order-router'
+import { IV3SubgraphProvider, V2SubgraphProvider, V3SubgraphProvider, V4SubgraphProvider } from '@uniswap/smart-order-router'
 import { ChainId } from '@uniswap/sdk-core'
 import { EulerSwapHooksSubgraphProvider } from '@uniswap/smart-order-router/'
 import {
@@ -20,6 +20,7 @@ import {
   ZORA_POST_HOOK_ON_BASE_v2_2_1,
   ZORA_POST_HOOK_ON_BASE_v2_3_0,
 } from '../util/hooksAddressesAllowlist'
+import { V3DomaSubgraphProvider } from '../graphql/doma-subgraph-provider'
 
 // during local cdk stack update, the env vars are not populated
 // make sure to fill in the env vars below
@@ -232,7 +233,7 @@ export interface ChainProtocol {
   protocol: Protocol
   chainId: ChainId
   timeout: number
-  provider: V2SubgraphProvider | V3SubgraphProvider | V4SubgraphProvider
+  provider: V2SubgraphProvider | V3SubgraphProvider | V4SubgraphProvider | IV3SubgraphProvider
   eulerHooksProvider?: EulerSwapHooksSubgraphProvider
 }
 
@@ -455,28 +456,28 @@ export const chainProtocols: ChainProtocol[] = [
     protocol: Protocol.V3,
     chainId: ChainId.DOMA,
     timeout: 90000,
-    provider: new V3SubgraphProvider(
+    provider: new V3DomaSubgraphProvider(
       ChainId.DOMA,
       3,
       90000,
-      true,
       v3TrackedEthThreshold,
       v3UntrackedUsdThreshold,
-      v3SubgraphUrlOverride(ChainId.DOMA)
+      'https://api.doma.xyz/graphql',
+      process.env.GRAPH_BEARER_TOKEN_97477
     ),
   },
     {
     protocol: Protocol.V3,
     chainId: ChainId.DOMA_SEPOLIA,
     timeout: 90000,
-    provider: new V3SubgraphProvider(
+    provider: new V3DomaSubgraphProvider(
       ChainId.DOMA_SEPOLIA,
       3,
       90000,
-      true,
       v3TrackedEthThreshold,
       v3UntrackedUsdThreshold,
-      v3SubgraphUrlOverride(ChainId.DOMA_SEPOLIA)
+      'https://api-testnet.doma.xyz/graphql',
+      process.env.GRAPH_BEARER_TOKEN_97476
     ),
   },
   // V2.

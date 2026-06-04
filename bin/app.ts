@@ -750,6 +750,8 @@ new RoutingAPIStack(app, 'RoutingAPIStack', {
   graphXlayerV3Id: process.env.GRAPH_XLAYER_V4_ID!,
   graphXLayerV2Id: process.env.GRAPH_XLAYER_V4_ID!,
   graphBearerToken: process.env.GRAPH_BEARER_TOKEN!,
+  graphBearerToken97476: process.env.GRAPH_BEARER_TOKEN_97476!,
+  graphBearerToken97477: process.env.GRAPH_BEARER_TOKEN_97477!,
   goldskyBearerToken: process.env.GOLDSKY_BEARER_TOKEN!,
   goldskyApiKey: process.env.GOLDSKY_API_KEY!,
   // Goldsky V2 subgraph IDs
