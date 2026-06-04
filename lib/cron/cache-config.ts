@@ -463,7 +463,7 @@ export const chainProtocols: ChainProtocol[] = [
       v3TrackedEthThreshold,
       v3UntrackedUsdThreshold,
       'https://api.doma.xyz/graphql',
-      process.env.GRAPH_BEARER_TOKEN_97476
+      process.env.GRAPH_BEARER_TOKEN_97477
     ),
   },
     {
@@ -477,7 +477,7 @@ export const chainProtocols: ChainProtocol[] = [
       v3TrackedEthThreshold,
       v3UntrackedUsdThreshold,
       'https://api-testnet.doma.xyz/graphql',
-      process.env.GRAPH_BEARER_TOKEN_97477
+      process.env.GRAPH_BEARER_TOKEN_97476
     ),
   },
   // V2.
