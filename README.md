@@ -64,6 +64,119 @@ The best way to develop and test the API is to deploy your own instance to AWS.
    curl --request GET '<INSERT_YOUR_URL_HERE>/quote?tokenInAddress=0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2&tokenInChainId=1&tokenOutAddress=0x1f9840a85d5af5bf1d1762f925bdaddc4201f984&tokenOutChainId=1&amount=100&type=exactIn'
    ```
 
+## Deploying to a new region (via GitHub Actions)
+
+The deploy workflow ([.github/workflows/deploy-routing-api.yml](.github/workflows/deploy-routing-api.yml)) picks the AWS region based on the branch name:
+
+| Branch | Region |
+|---|---|
+| `main` | `us-west-1` (production) |
+| any other branch | `us-east-2` (default test) |
+
+To target a different test region, add a branch-specific entry to the `Select AWS region` step in the workflow.
+
+### Step 1 — Bootstrap CDK in the target region (one-time)
+
+CDK needs an S3 bucket and IAM roles in every region before it can deploy there. Run once from your local machine with credentials for the target AWS account:
+
+```bash
+export TARGET_REGION=us-east-1      # change to your target region
+export AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+
+cdk bootstrap aws://${AWS_ACCOUNT_ID}/${TARGET_REGION}
+```
+
+Verify it succeeded:
+
+```bash
+aws cloudformation describe-stacks \
+  --stack-name CDKToolkit \
+  --region $TARGET_REGION \
+  --query 'Stacks[0].StackStatus'
+# expect: "CREATE_COMPLETE" or "UPDATE_COMPLETE"
+```
+
+### Step 2 — Update the branch→region mapping in the workflow
+
+Edit the `Select AWS region based on branch` step in [.github/workflows/deploy-routing-api.yml](.github/workflows/deploy-routing-api.yml):
+
+```yaml
+- name: Select AWS region based on branch
+  run: |
+    if [ "${GITHUB_REF_NAME}" = "main" ]; then
+      echo "AWS_REGION=us-west-1" >> $GITHUB_ENV
+    elif [ "${GITHUB_REF_NAME}" = "test-node24" ]; then
+      echo "AWS_REGION=us-east-1" >> $GITHUB_ENV   # your new test region
+    else
+      echo "AWS_REGION=us-east-2" >> $GITHUB_ENV
+    fi
+```
+
+### Step 3 — Check GitHub secrets
+
+Ensure the following secrets are set in **GitHub → Settings → Secrets and variables → Actions**:
+
+| Secret | Purpose |
+|---|---|
+| `AWS_ROLE_ARN` | IAM role CDK assumes (must trust GitHub OIDC and have deploy permissions in the target region/account) |
+| `DOTENV` | Contents of the `.env` file injected at deploy time |
+| `NODE_AUTH_TOKEN` | GitHub token for installing `@d3-inc` private packages |
+| `SLACK_WEBHOOK` | (optional) Slack notifications on deploy completion/failure |
+
+If the new test region uses a different AWS account, `AWS_ROLE_ARN` must reference a role in that account. If it needs different environment variables, add a second secret (e.g. `DOTENV_TEST`) and reference it in the workflow for that branch.
+
+### Step 4 — Push your branch and trigger the workflow
+
+```bash
+git checkout -b test-node24
+git push origin test-node24
+
+# Trigger via GitHub CLI:
+gh workflow run deploy-routing-api.yml --ref test-node24
+
+# Watch the run:
+gh run watch $(gh run list --workflow=deploy-routing-api.yml --limit 1 --json databaseId --jq '.[0].databaseId')
+```
+
+Or go to **Actions → Deploy Uniswap Routing API → Run workflow** and select your branch.
+
+### Step 5 — Verify the deploy
+
+```bash
+export TARGET_REGION=us-east-1   # your test region
+
+# Stack status
+aws cloudformation describe-stacks \
+  --stack-name RoutingAPIStack \
+  --region $TARGET_REGION \
+  --query 'Stacks[0].StackStatus'
+
+# Get the API Gateway URL
+aws cloudformation describe-stacks \
+  --stack-name RoutingAPIStack \
+  --region $TARGET_REGION \
+  --query 'Stacks[0].Outputs'
+
+# Confirm Lambda runtime is nodejs24.x
+LAMBDA_NAME=$(aws lambda list-functions --region $TARGET_REGION \
+  --query 'Functions[?contains(FunctionName,`RoutingLambda2`)].FunctionName' \
+  --output text)
+
+aws lambda get-function-configuration \
+  --function-name $LAMBDA_NAME \
+  --region $TARGET_REGION \
+  --query 'Runtime'
+# expect: "nodejs24.x"
+
+# Hit the quote endpoint
+curl -s "https://<api-id>.execute-api.${TARGET_REGION}.amazonaws.com/prod/quote?\
+tokenInAddress=<TOKEN_IN>&tokenInChainId=<CHAIN_ID>\
+&tokenOutAddress=<TOKEN_OUT>&tokenOutChainId=<CHAIN_ID>\
+&amount=1000000000000000000&type=exactIn" | jq '{quote: .quote, routeLen: (.route | length)}'
+```
+
+---
+
 ### Tenderly Simulation
 
 1. To get a more accurate estimate of the transaction's gas cost, request a tenderly simulation along with the swap. This is done by setting the optional query param "simulateFromAddress". For example:

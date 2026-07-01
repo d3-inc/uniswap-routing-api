@@ -30,10 +30,12 @@ export class RpcGatewayFallbackStack extends cdk.NestedStack {
     rpcHealthProviderStateDynamoDB.grantReadWriteData(lambdaRole)
 
     const region = cdk.Stack.of(this).region
+    // X-Ray tracing defaults to ACTIVE unless TRACING is set to 'false' (X-Ray is billed per trace).
+    const tracingMode = process.env.TRACING === 'false' ? aws_lambda.Tracing.DISABLED : aws_lambda.Tracing.ACTIVE
 
     const providerFallbackLambda = new aws_lambda_nodejs.NodejsFunction(this, 'ProviderFallbackLambda', {
       role: lambdaRole,
-      runtime: aws_lambda.Runtime.NODEJS_18_X,
+      runtime: aws_lambda.Runtime.NODEJS_24_X,
       entry: path.join(__dirname, '../../lib/rpc/handler/index.ts'),
       handler: 'fallbackHandler',
       timeout: cdk.Duration.seconds(15),
@@ -50,7 +52,7 @@ export class RpcGatewayFallbackStack extends cdk.NestedStack {
           `arn:aws:lambda:${region}:580247275435:layer:LambdaInsightsExtension:14`
         ),
       ],
-      tracing: aws_lambda.Tracing.ACTIVE,
+      tracing: tracingMode,
       logRetention: RetentionDays.ONE_WEEK,
 
       environment: {

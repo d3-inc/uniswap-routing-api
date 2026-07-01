@@ -7,7 +7,7 @@ const originalEmit = (bunyan.prototype as any)._emit;
   return originalEmit.call(this, rec, noemit);
 };
 
-import { setGlobalLogger } from '@baberswap/smart-order-router'
+import { setGlobalLogger } from '@uniswap/smart-order-router'
 import { QuoteHandlerInjector } from './quote/injector'
 import { QuoteHandler } from './quote/quote'
 

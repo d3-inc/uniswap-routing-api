@@ -1,0 +1,79 @@
+name: Deploy Uniswap Routing API
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+  packages: read
+
+env:
+  NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@d3-inc'
+
+      - name: Create .env file
+        run: printf "%s" "${{ secrets.DOTENV }}" > .env
+        
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build project
+        run: npm run build
+
+      - name: Select AWS region based on branch
+        run: |
+          if [ "${GITHUB_REF_NAME}" = "main" ]; then
+            echo "AWS_REGION=us-west-1" >> $GITHUB_ENV
+          else
+            echo "AWS_REGION=us-east-2" >> $GITHUB_ENV
+          fi
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Show selected AWS region
+        run: echo "Deploying to region:" $AWS_REGION
+
+      - name: Install CDK CLI
+        # Must be >= the aws-cdk-lib version's required CLI. aws-cdk-lib is pinned to 2.230.0
+        # (lowest release exposing Runtime.NODEJS_24_X); 2.1128.1 reads its cloud-assembly schema.
+        run: npm install -g aws-cdk@2.1128.1
+
+      - name: Deploy CDK stack
+        run: cdk deploy RoutingAPIStack
+
+      - name: Slack notification
+        uses: 8398a7/action-slack@v3
+        with:
+          status: custom
+          fields: workflow,job,commit,pullRequest,repo,ref,message,author,took
+          custom_payload: |
+            {
+              attachments: [{
+                color: '${{ job.status }}' === 'success' ? 'good' : '${{ job.status }}' === 'failure' ? 'danger' : 'warning',
+                text: `${process.env.AS_WORKFLOW} ${{ job.status }} in ${process.env.AS_TOOK}\n Workflow: ${process.env.AS_JOB} Commit: (${process.env.AS_COMMIT})\n PR: (${process.env.AS_PULL_REQUEST})\n Repo: ${process.env.AS_REPO} Ref: ${process.env.AS_REF}\n Message: ${process.env.AS_MESSAGE}\n By: ${process.env.AS_AUTHOR}`,
+              }]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+        if: always()
