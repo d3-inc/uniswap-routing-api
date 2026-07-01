@@ -158,13 +158,13 @@ export class RoutingLambdaStack extends cdk.NestedStack {
         METRICS_SAMPLE_RATE: process.env.METRICS_SAMPLE_RATE ?? '0.05',
         LOG_LEVEL: process.env.LOG_LEVEL ?? 'warn',
       },
-      layers: [
+      layers: process.env.LAMBDA_INSIGHTS_ENABLED === 'true' ? [
         aws_lambda.LayerVersion.fromLayerVersionArn(
           this,
           'CachingInsightsLayer',
           `arn:aws:lambda:${region}:580247275435:layer:LambdaInsightsExtension:14`
         ),
-      ],
+      ] : [],
       tracing: tracingMode,
       logRetention: RetentionDays.TWO_WEEKS,
     })
@@ -224,13 +224,13 @@ export class RoutingLambdaStack extends cdk.NestedStack {
         METRICS_SAMPLE_RATE: process.env.METRICS_SAMPLE_RATE ?? '0.05',
         LOG_LEVEL: process.env.LOG_LEVEL ?? 'warn',
       },
-      layers: [
+      layers: process.env.LAMBDA_INSIGHTS_ENABLED === 'true' ? [
         aws_lambda.LayerVersion.fromLayerVersionArn(
           this,
           'InsightsLayer',
           `arn:aws:lambda:${region}:580247275435:layer:LambdaInsightsExtension:14`
         ),
-      ],
+      ] : [],
       tracing: tracingMode,
       logRetention: RetentionDays.TWO_WEEKS,
     })

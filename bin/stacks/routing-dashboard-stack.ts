@@ -62,7 +62,7 @@ export class RoutingDashboardStack extends cdk.NestedStack {
           LogGroupNames: [`/aws/lambda/${routingLambdaName}`],
         }),
         RuleName: REQUESTED_QUOTES_RULE_NAME,
-        RuleState: 'ENABLED',
+        RuleState: process.env.ENABLE_CONTRIBUTOR_INSIGHTS === 'true' ? 'ENABLED' : 'DISABLED',
       },
     })
 
@@ -88,7 +88,7 @@ export class RoutingDashboardStack extends cdk.NestedStack {
           LogGroupNames: [`/aws/lambda/${routingLambdaName}`],
         }),
         RuleName: REQUESTED_QUOTES_BY_CHAIN_RULE_NAME,
-        RuleState: 'ENABLED',
+        RuleState: process.env.ENABLE_CONTRIBUTOR_INSIGHTS === 'true' ? 'ENABLED' : 'DISABLED',
       },
     })
 
