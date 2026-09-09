@@ -29,13 +29,24 @@ jobs:
           scope: '@d3-inc'
 
       - name: Create .env file
+        # Secrets must be passed via env: and referenced as shell variables,
+        # not interpolated directly into the run: body.  The ${{ secrets.X }}
+        # syntax is resolved by GitHub before the runner hands the script to
+        # bash: the raw secret value becomes part of the command text, visible
+        # in the process listing and in runner debug logs, and any shell
+        # metacharacter in the value would be executed.  Referencing
+        # $DOTENV_MAIN and $DOTENV_OTHER through env: keeps the values out of
+        # the command-line text entirely.
         run: |
           if [ "${GITHUB_REF_NAME}" = "main" ]; then
-            printf "%s" "${{ secrets.DOTENV_MAIN }}" > .env
+            printf "%s" "$DOTENV_MAIN" > .env
           else
-            printf "%s" "${{ secrets.DOTENV_OTHER }}" > .env
+            printf "%s" "$DOTENV_OTHER" > .env
           fi
           ls -la .env
+        env:
+          DOTENV_MAIN: ${{ secrets.DOTENV_MAIN }}
+          DOTENV_OTHER: ${{ secrets.DOTENV_OTHER }}
         
       - name: Install dependencies
         run: npm install
