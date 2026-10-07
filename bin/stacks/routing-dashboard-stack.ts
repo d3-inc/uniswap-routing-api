@@ -577,7 +577,7 @@ export class RoutingDashboardStack extends cdk.NestedStack {
       MAINNETS.concat(TESTNETS)
     ).generateWidgets()
 
-    const envSuffix = process.env.ENVIRONMENT ? `-${process.env.ENVIRONMENT}` : '';
+    const envSuffix = process.env.ENVIRONMENT ? `-${process.env.ENVIRONMENT}` : ''
 
     new aws_cloudwatch.CfnDashboard(this, 'RoutingAPIDashboard', {
       dashboardName: `RoutingDashboard${envSuffix}`,

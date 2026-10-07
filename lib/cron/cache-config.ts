@@ -468,7 +468,7 @@ export const chainProtocols: ChainProtocol[] = [
       v3SubgraphUrlOverride(ChainId.DOMA)
     ),
   },
-    {
+  {
     protocol: Protocol.V3,
     chainId: ChainId.DOMA_SEPOLIA,
     timeout: 90000,

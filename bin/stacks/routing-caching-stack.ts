@@ -319,9 +319,7 @@ export class RoutingCachingStack extends cdk.NestedStack {
     )
 
     // TRACING env var defaults to ACTIVE unless set to 'false'
-    const tracingMode = process.env.TRACING === 'false' 
-      ? aws_lambda.Tracing.DISABLED 
-      : aws_lambda.Tracing.ACTIVE;
+    const tracingMode = process.env.TRACING === 'false' ? aws_lambda.Tracing.DISABLED : aws_lambda.Tracing.ACTIVE
 
     // Spin up a new pool cache lambda for each config in chain X protocol
     for (let i = 0; i < chainProtocols.length; i++) {

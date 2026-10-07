@@ -70,7 +70,7 @@ export class RoutingDatabaseStack extends cdk.NestedStack {
   constructor(scope: Construct, name: string, props: RoutingDatabaseStackProps) {
     super(scope, name, props)
 
-  const envSuffix = process.env.ENVIRONMENT ? `-${process.env.ENVIRONMENT}` : '';
+    const envSuffix = process.env.ENVIRONMENT ? `-${process.env.ENVIRONMENT}` : ''
     // Creates a DynamoDB Table for storing the routes
     this.routesDynamoDb = new aws_dynamodb.Table(this, DynamoDBTableProps.RoutesDbTable.Name, {
       tableName: `${DynamoDBTableProps.RoutesDbTable.Name}${envSuffix}`,

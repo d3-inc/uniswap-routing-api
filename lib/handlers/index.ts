@@ -1,11 +1,11 @@
 import { default as bunyan } from 'bunyan'
 
-const targetLevel = (process.env.LOG_LEVEL === 'warn') ? 40 : 30;
-const originalEmit = (bunyan.prototype as any)._emit;
-(bunyan.prototype as any)._emit = function (rec: any, noemit: any) {
-  if (rec.level < targetLevel) return;
-  return originalEmit.call(this, rec, noemit);
-};
+const targetLevel = process.env.LOG_LEVEL === 'warn' ? 40 : 30
+const originalEmit = (bunyan.prototype as any)._emit
+;(bunyan.prototype as any)._emit = function (rec: any, noemit: any) {
+  if (rec.level < targetLevel) return
+  return originalEmit.call(this, rec, noemit)
+}
 
 import { setGlobalLogger } from '@uniswap/smart-order-router'
 import { QuoteHandlerInjector } from './quote/injector'
@@ -16,7 +16,7 @@ const log = bunyan.createLogger({
   serializers: bunyan.stdSerializers,
   level: targetLevel,
 })
-setGlobalLogger(log);
+setGlobalLogger(log)
 
 let quoteHandler: QuoteHandler
 try {
@@ -29,4 +29,4 @@ try {
 
 module.exports = {
   quoteHandler: quoteHandler.handler,
-} 
+}

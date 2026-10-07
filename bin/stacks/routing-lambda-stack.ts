@@ -101,11 +101,13 @@ export class RoutingLambdaStack extends cdk.NestedStack {
     rpcProviderHealthStateDynamoDb.grantReadWriteData(lambdaRole)
 
     const region = cdk.Stack.of(this).region
-    const envRoutingLamdbaMemorySize = process.env.ROUTING_LAMBDA_MEMORY_SIZE ? parseInt(process.env.ROUTING_LAMBDA_MEMORY_SIZE, 10) : 2560;
-    const envSuffix = process.env.ENVIRONMENT ? `-${process.env.ENVIRONMENT}` : '';
+    const envRoutingLamdbaMemorySize = process.env.ROUTING_LAMBDA_MEMORY_SIZE
+      ? parseInt(process.env.ROUTING_LAMBDA_MEMORY_SIZE, 10)
+      : 2560
+    const envSuffix = process.env.ENVIRONMENT ? `-${process.env.ENVIRONMENT}` : ''
     // X-Ray tracing defaults to ACTIVE unless TRACING is set to 'false' (X-Ray is billed per trace).
     const tracingMode = process.env.TRACING === 'false' ? aws_lambda.Tracing.DISABLED : aws_lambda.Tracing.ACTIVE
-    
+
     const cachingRoutingLambda = new aws_lambda_nodejs.NodejsFunction(this, 'CachingRoutingLambda', {
       role: lambdaRole,
       runtime: aws_lambda.Runtime.NODEJS_24_X,
@@ -158,13 +160,16 @@ export class RoutingLambdaStack extends cdk.NestedStack {
         METRICS_SAMPLE_RATE: process.env.METRICS_SAMPLE_RATE ?? '0.05',
         LOG_LEVEL: process.env.LOG_LEVEL ?? 'warn',
       },
-      layers: process.env.LAMBDA_INSIGHTS_ENABLED === 'true' ? [
-        aws_lambda.LayerVersion.fromLayerVersionArn(
-          this,
-          'CachingInsightsLayer',
-          `arn:aws:lambda:${region}:580247275435:layer:LambdaInsightsExtension:14`
-        ),
-      ] : [],
+      layers:
+        process.env.LAMBDA_INSIGHTS_ENABLED === 'true'
+          ? [
+              aws_lambda.LayerVersion.fromLayerVersionArn(
+                this,
+                'CachingInsightsLayer',
+                `arn:aws:lambda:${region}:580247275435:layer:LambdaInsightsExtension:14`
+              ),
+            ]
+          : [],
       tracing: tracingMode,
       logRetention: RetentionDays.TWO_WEEKS,
     })
@@ -224,13 +229,16 @@ export class RoutingLambdaStack extends cdk.NestedStack {
         METRICS_SAMPLE_RATE: process.env.METRICS_SAMPLE_RATE ?? '0.05',
         LOG_LEVEL: process.env.LOG_LEVEL ?? 'warn',
       },
-      layers: process.env.LAMBDA_INSIGHTS_ENABLED === 'true' ? [
-        aws_lambda.LayerVersion.fromLayerVersionArn(
-          this,
-          'InsightsLayer',
-          `arn:aws:lambda:${region}:580247275435:layer:LambdaInsightsExtension:14`
-        ),
-      ] : [],
+      layers:
+        process.env.LAMBDA_INSIGHTS_ENABLED === 'true'
+          ? [
+              aws_lambda.LayerVersion.fromLayerVersionArn(
+                this,
+                'InsightsLayer',
+                `arn:aws:lambda:${region}:580247275435:layer:LambdaInsightsExtension:14`
+              ),
+            ]
+          : [],
       tracing: tracingMode,
       logRetention: RetentionDays.TWO_WEEKS,
     })

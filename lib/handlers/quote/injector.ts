@@ -51,8 +51,8 @@ export class QuoteHandlerInjector extends InjectorSOR<
     // All other requests will only log warnings and errors.
     // Note that we use WARN as a default rather than ERROR
     // to capture Tapcompare logs in the smart-order-router.
-    const isSampled = Math.random() < 0.1;
-    const currentLogLevel = enableDebug ? bunyan.DEBUG : isSampled ? bunyan.INFO : log.level();
+    const isSampled = Math.random() < 0.1
+    const currentLogLevel = enableDebug ? bunyan.DEBUG : isSampled ? bunyan.INFO : log.level()
 
     log = log.child({
       serializers: bunyan.stdSerializers,
@@ -69,7 +69,7 @@ export class QuoteHandlerInjector extends InjectorSOR<
       activityId: activityId,
     })
     setGlobalLogger(log)
-    
+
     metricsLogger.setNamespace('Uniswap')
     metricsLogger.setDimensions({ Service: 'RoutingAPI' })
     const metric = new AWSMetricsLogger(metricsLogger)
