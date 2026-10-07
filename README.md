@@ -44,8 +44,11 @@ The best way to develop and test the API is to deploy your own instance to AWS.
    GQL_H_ORGN = '' # The GraphQL header origin, for Uniswap graphql query access
    ENVIRONMENT = '' # Add support to install another environment in the same account but different region
    #ROUTING_LAMBDA_MEMORY_SIZE = '1536' # Set lamdba default memory size
-   TRACING = 'false' # Set to true to enable tracing.
-   METRICS_SAMPLE_RATE = '0.05' # Log sampling rate (0 to 1). 0.05 sends 5% of logs, 1 sends all.
+   TRACING = 'false' # X-Ray tracing. ONLY the exact string 'false' disables it; unset/anything else = ACTIVE (billed).
+   METRICS_SAMPLE_RATE = '0.05' # EMF metrics sampling (0 to 1). 0.05 emits metrics for 5% of invocations, 1 for all.
+   LOG_LEVEL = 'warn' # Lambda bunyan log level. Defaults to 'warn' when unset. 'info' restores verbose request logs.
+   LAMBDA_INSIGHTS_ENABLED = '' # 'true' attaches the CloudWatch Lambda Insights layer to the routing lambdas (extra cost).
+   ENABLE_CONTRIBUTOR_INSIGHTS = '' # 'true' enables the CloudWatch Contributor Insights rules (extra cost).
    ```
 3. Install and build the package
    ```
