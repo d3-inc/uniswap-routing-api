@@ -95,7 +95,7 @@ export class QuoteHandlerInjector extends InjectorSOR<
       v3SubgraphProvider,
       blockedTokenListProvider,
       v2PoolProvider,
-      tokenValidatorProvider,
+      // tokenValidatorProvider,
       tokenPropertiesProvider,
       v2QuoteProvider,
       v2SubgraphProvider,
@@ -140,7 +140,7 @@ export class QuoteHandlerInjector extends InjectorSOR<
           v2SubgraphProvider,
           simulator,
           routeCachingProvider,
-          tokenValidatorProvider,
+          tokenValidatorProvider: undefined, // Not needed for Doma Chains
           tokenPropertiesProvider,
           v2Supported,
           v4Supported,

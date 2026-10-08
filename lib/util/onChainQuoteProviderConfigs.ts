@@ -82,6 +82,16 @@ export const RETRY_OPTIONS: { [chainId: number]: AsyncRetry.Options | undefined 
     minTimeout: 100,
     maxTimeout: 1000,
   },
+  [ChainId.DOMA_SEPOLIA]: {
+    retries: 2,
+    minTimeout: 100,
+    maxTimeout: 1000,
+  },
+  [ChainId.DOMA]: {
+    retries: 2,
+    minTimeout: 100,
+    maxTimeout: 1000,
+  },
 }
 
 export const OPTIMISTIC_CACHED_ROUTES_BATCH_PARAMS: { [protocol in Protocol]: { [chainId: number]: BatchParams } } = {
@@ -280,6 +290,16 @@ export const OPTIMISTIC_CACHED_ROUTES_BATCH_PARAMS: { [protocol in Protocol]: { 
     [ChainId.XLAYER]: {
       multicallChunk: 80,
       gasLimitPerCall: 1_200_000,
+      quoteMinSuccessRate: 0.1,
+    },
+    [ChainId.DOMA_SEPOLIA]: {
+      multicallChunk: 500,
+      gasLimitPerCall: 100_000,
+      quoteMinSuccessRate: 0.1,
+    },
+    [ChainId.DOMA]: {
+      multicallChunk: 500,
+      gasLimitPerCall: 100_000,
       quoteMinSuccessRate: 0.1,
     },
   },
@@ -681,6 +701,16 @@ export const NON_OPTIMISTIC_CACHED_ROUTES_BATCH_PARAMS: { [protocol in Protocol]
         gasLimitPerCall: 1_200_000,
         quoteMinSuccessRate: 0.1,
       },
+      [ChainId.DOMA_SEPOLIA]: {
+        multicallChunk: 250,
+        gasLimitPerCall: 200_000,
+        quoteMinSuccessRate: 0.1,
+      },
+      [ChainId.DOMA]: {
+        multicallChunk: 250,
+        gasLimitPerCall: 200_000,
+        quoteMinSuccessRate: 0.1,
+      },
     },
     // V4 can be the same as V4 to begin. likely v4 is more gas efficient because of pool singleton for swaps by accounting mechanism
     [Protocol.V4]: {
@@ -939,6 +969,14 @@ export const GAS_ERROR_FAILURE_OVERRIDES: { [chainId: number]: FailureOverrides 
     gasLimitOverride: 3_000_000,
     multicallChunk: 45,
   },
+  [ChainId.DOMA_SEPOLIA]: {
+    gasLimitOverride: 5_000_000,
+    multicallChunk: 5,
+  },
+  [ChainId.DOMA]: {
+    gasLimitOverride: 5_000_000,
+    multicallChunk: 5,
+  },
 }
 
 export const SUCCESS_RATE_FAILURE_OVERRIDES: { [chainId: number]: FailureOverrides } = {
@@ -994,6 +1032,14 @@ export const SUCCESS_RATE_FAILURE_OVERRIDES: { [chainId: number]: FailureOverrid
   [ChainId.XLAYER]: {
     gasLimitOverride: 3_000_000,
     multicallChunk: 45,
+  },
+  [ChainId.DOMA_SEPOLIA]: {
+    gasLimitOverride: 5_000_000,
+    multicallChunk: 5,
+  },
+  [ChainId.DOMA]: {
+    gasLimitOverride: 5_000_000,
+    multicallChunk: 5,
   },
 }
 
