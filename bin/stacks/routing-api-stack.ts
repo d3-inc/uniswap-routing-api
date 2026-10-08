@@ -78,6 +78,8 @@ export class RoutingAPIStack extends cdk.Stack {
       graphXlayerV3Id?: string
       graphXLayerV2Id?: string
       graphBearerToken?: string
+      graphBearerToken97476?: string
+      graphBearerToken97477?: string
       uniGraphQLEndpoint: string
       uniGraphQLHeaderOrigin: string
       goldskyBearerToken?: string
@@ -155,6 +157,8 @@ export class RoutingAPIStack extends cdk.Stack {
       graphXlayerV3Id,
       graphXLayerV2Id,
       graphBearerToken,
+      graphBearerToken97476,
+      graphBearerToken97477,
       uniGraphQLEndpoint,
       uniGraphQLHeaderOrigin,
       goldskyBearerToken,
@@ -228,6 +232,8 @@ export class RoutingAPIStack extends cdk.Stack {
       graphXlayerV3Id,
       graphXLayerV2Id,
       graphBearerToken,
+      graphBearerToken97476,
+      graphBearerToken97477,
       goldskyBearerToken,
       goldskyApiKey,
       // Goldsky V2 subgraph IDs
