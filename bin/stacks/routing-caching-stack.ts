@@ -312,11 +312,27 @@ export class RoutingCachingStack extends cdk.NestedStack {
 
     const region = cdk.Stack.of(this).region
 
-    const lambdaLayerVersion = aws_lambda.LayerVersion.fromLayerVersionArn(
-      this,
-      'InsightsLayerPools',
-      `arn:aws:lambda:${region}:580247275435:layer:LambdaInsightsExtension:14`
-    )
+    const insightsEnabled = process.env.LAMBDA_INSIGHTS_ENABLED === 'true'
+
+    const poolCacheInsightsLayers = insightsEnabled
+      ? [
+          aws_lambda.LayerVersion.fromLayerVersionArn(
+            this,
+            'InsightsLayerPools',
+            `arn:aws:lambda:${region}:580247275435:layer:LambdaInsightsExtension:14`
+          ),
+        ]
+      : []
+
+    const tokenListInsightsLayers = insightsEnabled
+      ? [
+          aws_lambda.LayerVersion.fromLayerVersionArn(
+            this,
+            'InsightsLayerTokenList',
+            `arn:aws:lambda:${region}:580247275435:layer:LambdaInsightsExtension:14`
+          ),
+        ]
+      : []
 
     // TRACING env var defaults to ACTIVE unless set to 'false'
     const tracingMode = process.env.TRACING === 'false' ? aws_lambda.Tracing.DISABLED : aws_lambda.Tracing.ACTIVE
@@ -339,7 +355,7 @@ export class RoutingCachingStack extends cdk.NestedStack {
             sourceMap: true,
           },
           description: `Pool Cache Lambda for Chain with ChainId ${chainId} and Protocol ${protocol}`,
-          layers: [lambdaLayerVersion],
+          layers: poolCacheInsightsLayers,
           tracing: tracingMode,
           environment: {
             VERSION: '5',
@@ -466,13 +482,7 @@ export class RoutingCachingStack extends cdk.NestedStack {
         minify: true,
         sourceMap: true,
       },
-      layers: [
-        aws_lambda.LayerVersion.fromLayerVersionArn(
-          this,
-          'InsightsLayerTokenList',
-          `arn:aws:lambda:${region}:580247275435:layer:LambdaInsightsExtension:14`
-        ),
-      ],
+      layers: tokenListInsightsLayers,
       description: 'Token List Cache Lambda',
       tracing: tracingMode,
       environment: {
