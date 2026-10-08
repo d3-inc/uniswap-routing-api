@@ -30,10 +30,22 @@ export class RpcGatewayFallbackStack extends cdk.NestedStack {
     rpcHealthProviderStateDynamoDB.grantReadWriteData(lambdaRole)
 
     const region = cdk.Stack.of(this).region
+    // X-Ray tracing defaults to ACTIVE unless TRACING is set to 'false' (X-Ray is billed per trace).
+    const tracingMode = process.env.TRACING === 'false' ? aws_lambda.Tracing.DISABLED : aws_lambda.Tracing.ACTIVE
+    const insightsLayers =
+      process.env.LAMBDA_INSIGHTS_ENABLED === 'true'
+        ? [
+            aws_lambda.LayerVersion.fromLayerVersionArn(
+              this,
+              'InsightsLayer',
+              `arn:aws:lambda:${region}:580247275435:layer:LambdaInsightsExtension:14`
+            ),
+          ]
+        : []
 
     const providerFallbackLambda = new aws_lambda_nodejs.NodejsFunction(this, 'ProviderFallbackLambda', {
       role: lambdaRole,
-      runtime: aws_lambda.Runtime.NODEJS_18_X,
+      runtime: aws_lambda.Runtime.NODEJS_24_X,
       entry: path.join(__dirname, '../../lib/rpc/handler/index.ts'),
       handler: 'fallbackHandler',
       timeout: cdk.Duration.seconds(15),
@@ -43,14 +55,8 @@ export class RpcGatewayFallbackStack extends cdk.NestedStack {
         minify: true,
         sourceMap: true,
       },
-      layers: [
-        aws_lambda.LayerVersion.fromLayerVersionArn(
-          this,
-          'InsightsLayer',
-          `arn:aws:lambda:${region}:580247275435:layer:LambdaInsightsExtension:14`
-        ),
-      ],
-      tracing: aws_lambda.Tracing.ACTIVE,
+      layers: insightsLayers,
+      tracing: tracingMode,
       logRetention: RetentionDays.ONE_WEEK,
 
       environment: {
@@ -90,7 +96,7 @@ export class RpcGatewayFallbackStack extends cdk.NestedStack {
           comparisonOperator: ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
           // TODO(jie): Resume to a reasonable threshold once we verified the workflow in prod.
           threshold: 1.0, // Alarm when error rate >= 1.0%
-          evaluationPeriods: 1,
+          evaluationPeriods: 2,
         })
 
         const lambdaAliasName = `ErrorRate-${chainId}-${providerNameFix}`
@@ -128,7 +134,7 @@ export class RpcGatewayFallbackStack extends cdk.NestedStack {
           comparisonOperator: ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
           // TODO(jie): Resume to a reasonable threshold once we verified the workflow in prod.
           threshold: 150, // Alarm when latency >= 150ms
-          evaluationPeriods: 1,
+          evaluationPeriods: 2,
         })
 
         const lambdaAliasName = `Latency-${chainId}-${providerNameFix}`

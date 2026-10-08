@@ -24,7 +24,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           registry-url: 'https://npm.pkg.github.com'
           scope: '@d3-inc'
 
@@ -61,10 +61,12 @@ jobs:
         run: echo "Deploying to region:" $AWS_REGION
 
       - name: Install CDK CLI
-        run: npm install -g aws-cdk@2.1029.0
+        # Must be >= the aws-cdk-lib version's required CLI. aws-cdk-lib is pinned to 2.230.0
+        # (lowest release exposing Runtime.NODEJS_24_X); 2.1128.1 reads its cloud-assembly schema.
+        run: npm install -g aws-cdk@2.1128.1
 
       - name: Deploy CDK stack
-        run: cdk deploy RoutingAPIStack
+        run: cdk deploy RoutingAPIStack --require-approval never --ci
 
       - name: Slack notification
         uses: 8398a7/action-slack@v3

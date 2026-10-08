@@ -8,6 +8,7 @@ import * as aws_cloudwatch from 'aws-cdk-lib/aws-cloudwatch'
 import { ComparisonOperator, MathExpression } from 'aws-cdk-lib/aws-cloudwatch'
 import * as aws_cloudwatch_actions from 'aws-cdk-lib/aws-cloudwatch-actions'
 import * as aws_logs from 'aws-cdk-lib/aws-logs'
+import { RetentionDays } from 'aws-cdk-lib/aws-logs'
 import * as aws_sns from 'aws-cdk-lib/aws-sns'
 import * as aws_waf from 'aws-cdk-lib/aws-wafv2'
 import { Construct } from 'constructs'
@@ -321,12 +322,14 @@ export class RoutingAPIStack extends cdk.Stack {
       uniGraphQLHeaderOrigin,
     })
 
-    const accessLogGroup = new aws_logs.LogGroup(this, 'RoutingAPIGAccessLogs')
+    const accessLogGroup = new aws_logs.LogGroup(this, 'RoutingAPIGAccessLogs', {
+      retention: RetentionDays.THREE_DAYS,
+    })
 
     const api = new aws_apigateway.RestApi(this, 'routing-api', {
       restApiName: 'Routing API',
       deployOptions: {
-        tracingEnabled: true,
+        tracingEnabled: process.env.TRACING !== 'false',
         loggingLevel: MethodLoggingLevel.ERROR,
         accessLogDestination: new aws_apigateway.LogGroupLogDestination(accessLogGroup),
         accessLogFormat: aws_apigateway.AccessLogFormat.jsonWithStandardFields({
@@ -537,41 +540,9 @@ export class RoutingAPIStack extends cdk.Stack {
       evaluationPeriods: 3,
       treatMissingData: aws_cloudwatch.TreatMissingData.NOT_BREACHING, // Missing data points are treated as "good" and within the threshold
     })
-    const simulationAlarmByChainSev2: cdk.aws_cloudwatch.Alarm[] = []
-    SUPPORTED_CHAINS.forEach((chainId) => {
-      if (CHAINS_NOT_MONITORED.includes(chainId)) {
-        return
-      }
-
-      const simulationAlarmSev2 = new aws_cloudwatch.Alarm(this, `RoutingAPI-SEV2-SimulationChainId${chainId}`, {
-        alarmName: `RoutingAPI-SEV2-SimulationChainId${chainId}`,
-        metric: new MathExpression({
-          expression: `100*(simulationSystemDown/simulationRequested)`,
-          period: Duration.minutes(30),
-          usingMetrics: {
-            simulationRequested: new aws_cloudwatch.Metric({
-              namespace: 'Uniswap',
-              metricName: `Simulation Requested`,
-              dimensionsMap: { Service: 'RoutingAPI' },
-              unit: aws_cloudwatch.Unit.COUNT,
-              statistic: 'sum',
-            }),
-            simulationSystemDown: new aws_cloudwatch.Metric({
-              namespace: 'Uniswap',
-              metricName: `SimulationSystemDownChainId${chainId}`,
-              dimensionsMap: { Service: 'RoutingAPI' },
-              unit: aws_cloudwatch.Unit.COUNT,
-              statistic: 'sum',
-            }),
-          },
-        }),
-        threshold: 20,
-        evaluationPeriods: 3,
-        treatMissingData: aws_cloudwatch.TreatMissingData.NOT_BREACHING, // Missing data points are treated as "good" and within the threshold
-      })
-
-      simulationAlarmByChainSev2.push(simulationAlarmSev2)
-    })
+    // Per-chain simulation alarms removed: the global simulationAlarmSev2 above already
+    // covers aggregate simulation downtime. Per-chain alarms used the same shared
+    // "Simulation Requested" denominator, making them redundant and adding 17 alarms per region.
 
     // Create an alarm for when GraphQLTokenFeeFetcherFetchFeesFailure rate goes above 15%.
     // We do have on chain fallback in place of GQL failure, but we want to be alerted if the failure rate is high to take action.
@@ -951,9 +922,6 @@ export class RoutingAPIStack extends cdk.Stack {
         alarm.addAlarmAction(new aws_cloudwatch_actions.SnsAction(chatBotTopic))
       })
       successRateByRequestSourceAndChainIdAlarm.forEach((alarm) => {
-        alarm.addAlarmAction(new aws_cloudwatch_actions.SnsAction(chatBotTopic))
-      })
-      simulationAlarmByChainSev2.forEach((alarm) => {
         alarm.addAlarmAction(new aws_cloudwatch_actions.SnsAction(chatBotTopic))
       })
       subgraphAlertAlarms.forEach((alarm) => {

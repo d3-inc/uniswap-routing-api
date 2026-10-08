@@ -62,7 +62,7 @@ export class RoutingDashboardStack extends cdk.NestedStack {
           LogGroupNames: [`/aws/lambda/${routingLambdaName}`],
         }),
         RuleName: REQUESTED_QUOTES_RULE_NAME,
-        RuleState: 'ENABLED',
+        RuleState: process.env.ENABLE_CONTRIBUTOR_INSIGHTS === 'true' ? 'ENABLED' : 'DISABLED',
       },
     })
 
@@ -88,7 +88,7 @@ export class RoutingDashboardStack extends cdk.NestedStack {
           LogGroupNames: [`/aws/lambda/${routingLambdaName}`],
         }),
         RuleName: REQUESTED_QUOTES_BY_CHAIN_RULE_NAME,
-        RuleState: 'ENABLED',
+        RuleState: process.env.ENABLE_CONTRIBUTOR_INSIGHTS === 'true' ? 'ENABLED' : 'DISABLED',
       },
     })
 
@@ -577,8 +577,10 @@ export class RoutingDashboardStack extends cdk.NestedStack {
       MAINNETS.concat(TESTNETS)
     ).generateWidgets()
 
+    const envSuffix = process.env.ENVIRONMENT ? `-${process.env.ENVIRONMENT}` : ''
+
     new aws_cloudwatch.CfnDashboard(this, 'RoutingAPIDashboard', {
-      dashboardName: `RoutingDashboard`,
+      dashboardName: `RoutingDashboard${envSuffix}`,
       dashboardBody: JSON.stringify({
         periodOverride: 'inherit',
         widgets: perChainWidgetsForRoutingDashboard
@@ -994,7 +996,7 @@ export class RoutingDashboardStack extends cdk.NestedStack {
 
     const quoteAmountsWidgets = new QuoteAmountsWidgetsFactory(NAMESPACE, region)
     new aws_cloudwatch.CfnDashboard(this, 'RoutingAPITrackedPairsDashboard', {
-      dashboardName: 'RoutingAPITrackedPairsDashboard',
+      dashboardName: `RoutingAPITrackedPairsDashboard${envSuffix}`,
       dashboardBody: JSON.stringify({
         periodOverride: 'inherit',
         widgets: quoteAmountsWidgets.generateWidgets(),
@@ -1003,7 +1005,7 @@ export class RoutingDashboardStack extends cdk.NestedStack {
 
     const cachedRoutesWidgets = new CachedRoutesWidgetsFactory(NAMESPACE, region, routingLambdaName)
     new aws_cloudwatch.CfnDashboard(this, 'CachedRoutesPerformanceDashboard', {
-      dashboardName: 'CachedRoutesPerformanceDashboard',
+      dashboardName: `CachedRoutesPerformanceDashboard${envSuffix}`,
       dashboardBody: JSON.stringify({
         periodOverride: 'inherit',
         widgets: cachedRoutesWidgets.generateWidgets(),
@@ -1011,7 +1013,7 @@ export class RoutingDashboardStack extends cdk.NestedStack {
     })
 
     new aws_cloudwatch.CfnDashboard(this, 'RoutingAPIQuoteProviderDashboard', {
-      dashboardName: `RoutingQuoteProviderDashboard`,
+      dashboardName: `RoutingQuoteProviderDashboard${envSuffix}`,
       dashboardBody: JSON.stringify({
         periodOverride: 'inherit',
         widgets: [

@@ -216,6 +216,9 @@ export const v2SubgraphUrlOverride = (chainId: ChainId) => {
   }
 }
 
+// NOTE: these V4 thresholds are only referenced by chainProtocols entries that are currently
+// commented out below. They are kept here (commented) so they can be restored alongside those
+// entries; left uncommented they trip TS6133 (noUnusedLocals).
 // const v4TrackedEthThreshold = 0.01 // Pools need at least 0.01 of trackedEth to be selected
 // const v4BaseTrackedEthThreshold = 0.1 // Pools on Base need at least 0.1 of trackedEth to be selected
 // const v4BaseZoraTrackedEthThreshold = 0.001 // Pools on Zora need at least 0.1 of trackedEth to be selected
@@ -227,7 +230,7 @@ const v3UntrackedUsdThreshold = 25000 // Pools need at least 25K USD (untracked)
 
 export const v2TrackedEthThreshold = 0.025 // Pairs need at least 0.025 of trackedEth to be selected
 export const v2BaseTrackedEthThreshold = 0.1 // Pairs on Base need at least 0.1 of trackedEth to be selected
-// const v2UntrackedUsdThreshold = Number.MAX_VALUE // Pairs need untracked TVL higher than this value to be selected (for metrics only). Currently excludes all V2 pools with untracked TVL.
+// const v2UntrackedUsdThreshold = Number.MAX_VALUE // only used by commented-out chainProtocols entries (see note above); uncommenting trips TS6133.
 
 export interface ChainProtocol {
   protocol: Protocol
@@ -466,7 +469,7 @@ export const chainProtocols: ChainProtocol[] = [
       process.env.GRAPH_BEARER_TOKEN_97477
     ),
   },
-    {
+  {
     protocol: Protocol.V3,
     chainId: ChainId.DOMA_SEPOLIA,
     timeout: 90000,

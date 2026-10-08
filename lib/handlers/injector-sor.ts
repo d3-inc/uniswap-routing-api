@@ -66,7 +66,11 @@ import { DefaultEVMClient } from './evm/EVMClient'
 import { InstrumentedEVMProvider } from './evm/provider/InstrumentedEVMProvider'
 import { deriveProviderName } from './evm/provider/ProviderName'
 import { V2DynamoCache } from './pools/pool-caching/v2/v2-dynamo-cache'
-import { DEFAULT_TOKEN_FEE_RESULT, ITokenFeeFetcher, TokenFeeMap } from '@uniswap/smart-order-router/build/main/providers/token-fee-fetcher'
+import {
+  DEFAULT_TOKEN_FEE_RESULT,
+  ITokenFeeFetcher,
+  TokenFeeMap,
+} from '@uniswap/smart-order-router/build/main/providers/token-fee-fetcher'
 import { PortionProvider } from '@uniswap/smart-order-router/build/main/providers/portion-provider'
 import { GlobalRpcProviders } from '../rpc/GlobalRpcProviders'
 import { StaticJsonRpcProvider } from '@ethersproject/providers'
@@ -173,15 +177,12 @@ export interface ContainerInjected {
 // On Doma chain, FOT tokens are not support
 // This token fee fetcher is used to avoid on-chain lookups
 class NoOpTokenFeeFetcher implements ITokenFeeFetcher {
-  async fetchFees(
-    addresses: string[],
-    _providerConfig?: ProviderConfig
-  ): Promise<TokenFeeMap> {
-    const result: TokenFeeMap = {};
-    for(const address of addresses) {
-      result[address] = DEFAULT_TOKEN_FEE_RESULT;
+  async fetchFees(addresses: string[], _providerConfig?: ProviderConfig): Promise<TokenFeeMap> {
+    const result: TokenFeeMap = {}
+    for (const address of addresses) {
+      result[address] = DEFAULT_TOKEN_FEE_RESULT
     }
-    return result;
+    return result
   }
 }
 
