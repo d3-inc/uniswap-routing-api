@@ -305,7 +305,9 @@ export abstract class APIGLambdaHandler<CInj, RInj extends BaseRInj, ReqBody, Re
       })
 
       if (queryParamsValidation.error) {
-        log.debug({ queryParamsValidation }, 'Request failed validation')
+        // A failed schema validation is a client 400, not a server fault. WARN keeps it visible
+        // under the default LOG_LEVEL floor without inflating error-rate metrics.
+        log.warn({ queryParamsValidation }, 'Request failed validation')
         return {
           state: 'invalid',
           errorResponse: {
@@ -331,7 +333,7 @@ export abstract class APIGLambdaHandler<CInj, RInj extends BaseRInj, ReqBody, Re
       })
 
       if (bodyValidation.error) {
-        log.error({ bodyValidation }, 'Request failed validation')
+        log.warn({ bodyValidation }, 'Request failed validation')
         return {
           state: 'invalid',
           errorResponse: {
