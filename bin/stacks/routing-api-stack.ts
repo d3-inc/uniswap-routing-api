@@ -1,4 +1,6 @@
-import { SUPPORTED_CHAINS } from '@uniswap/smart-order-router'
+// Use this fork's chain list, not the SDK's. The SDK exports all 28 chains upstream
+// supports; this fork serves only DOMA
+import { SUPPORTED_CHAINS } from '../../lib/handlers/injector-sor'
 import * as cdk from 'aws-cdk-lib'
 import { CfnOutput, Duration } from 'aws-cdk-lib'
 import { ChainId } from '@uniswap/sdk-core'
@@ -24,7 +26,14 @@ import { RpcGatewayFallbackStack } from './rpc-gateway-fallback-stack'
 import { chainProtocols } from '../../lib/cron/cache-config'
 
 export const CHAINS_NOT_MONITORED: ChainId[] = TESTNETS
-export const REQUEST_SOURCES_NOT_MONITORED = ['unknown']
+
+export const REQUEST_SOURCES_NOT_MONITORED = [
+  'unknown',
+  'uniswap-ios',
+  'uniswap-android',
+  'uniswap-web',
+  'uniswap-extension',
+]
 
 // For low volume chains, we'll increase the evaluation periods to reduce triggering sensitivity.
 export const LOW_VOLUME_CHAINS: Set<ChainId> = new Set([
