@@ -353,21 +353,21 @@ export abstract class InjectorSOR<Router, QueryParams> extends Injector<
               POOL_CACHE_GZIP_KEY!,
               v4PoolProvider,
               v4PoolParams
-            )) as V4AWSSubgraphProvider,
+            )) as StaticV4SubgraphProvider,
             (await this.instantiateSubgraphProvider(
               chainId,
               Protocol.V3,
               POOL_CACHE_BUCKET_3!,
               POOL_CACHE_GZIP_KEY!,
               v3PoolProvider
-            )) as V3AWSSubgraphProvider,
+            )) as StaticV3SubgraphProvider,
             (await this.instantiateSubgraphProvider(
               chainId,
               Protocol.V2,
               POOL_CACHE_BUCKET_3!,
               POOL_CACHE_GZIP_KEY!,
               v2PoolProvider
-            )) as V2AWSSubgraphProvider,
+            )) as StaticV2SubgraphProvider,
           ])
 
           const tokenProvider = new CachingTokenProviderWithFallback(
