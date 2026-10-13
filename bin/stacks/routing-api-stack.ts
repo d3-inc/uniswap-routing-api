@@ -4,6 +4,7 @@ import { CfnOutput, Duration } from 'aws-cdk-lib'
 import { ChainId } from '@uniswap/sdk-core'
 import * as aws_apigateway from 'aws-cdk-lib/aws-apigateway'
 import { MethodLoggingLevel } from 'aws-cdk-lib/aws-apigateway'
+import * as aws_certificatemanager from 'aws-cdk-lib/aws-certificatemanager'
 import * as aws_cloudwatch from 'aws-cdk-lib/aws-cloudwatch'
 import { ComparisonOperator, MathExpression } from 'aws-cdk-lib/aws-cloudwatch'
 import * as aws_cloudwatch_actions from 'aws-cdk-lib/aws-cloudwatch-actions'
@@ -343,6 +344,45 @@ export class RoutingAPIStack extends cdk.Stack {
         allowMethods: aws_apigateway.Cors.ALL_METHODS,
       },
     })
+
+    // Optional vanity domain (e.g. routing-api.doma.xyz) in front of the generated
+    // execute-api URL. Both vars must be set or the block is skipped entirely, so an
+    // unconfigured environment keeps deploying exactly as before.
+    //
+    // This RestApi is EDGE-optimized (no endpointConfiguration is set, and EDGE is the
+    // CloudFormation default), so the certificate MUST live in us-east-1 regardless of
+    // which region this stack is deployed to.
+    const apiDomainName = process.env.API_DOMAIN_NAME
+    const apiCertificateArn = process.env.API_CERTIFICATE_ARN
+
+    if (apiDomainName && apiCertificateArn) {
+      const customDomain = new aws_apigateway.DomainName(this, 'RoutingAPIDomainName', {
+        domainName: apiDomainName,
+        certificate: aws_certificatemanager.Certificate.fromCertificateArn(
+          this,
+          'RoutingAPICertificate',
+          apiCertificateArn
+        ),
+        endpointType: aws_apigateway.EndpointType.EDGE,
+        securityPolicy: aws_apigateway.SecurityPolicy.TLS_1_2,
+      })
+
+      // Map the domain root to the API's deployed stage, so the vanity host serves
+      // /quote directly instead of /prod/quote.
+      customDomain.addBasePathMapping(api, { stage: api.deploymentStage })
+
+      // The CNAME target to create in Cloudflare. Must be DNS-only (grey cloud):
+      // proxying it puts Cloudflare in front of CloudFront for no benefit, and breaks
+      // the TLS handshake API Gateway expects for an EDGE domain.
+      new CfnOutput(this, 'CustomDomainTarget', {
+        value: customDomain.domainNameAliasDomainName,
+        description: `Create a DNS-only CNAME: ${apiDomainName} -> this value`,
+      })
+
+      new CfnOutput(this, 'CustomDomainUrl', {
+        value: `https://${apiDomainName}`,
+      })
+    }
 
     const ipThrottlingACL = new aws_waf.CfnWebACL(this, 'RoutingAPIIPThrottlingACL', {
       defaultAction: { allow: {} },

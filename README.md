@@ -49,6 +49,11 @@ The best way to develop and test the API is to deploy your own instance to AWS.
    LOG_LEVEL = 'warn' # Lambda bunyan log level. Defaults to 'warn' when unset. 'info' restores verbose request logs.
    LAMBDA_INSIGHTS_ENABLED = '' # 'true' attaches the CloudWatch Lambda Insights layer to the routing lambdas (extra cost).
    ENABLE_CONTRIBUTOR_INSIGHTS = '' # 'true' enables the CloudWatch Contributor Insights rules (extra cost).
+   # Optional vanity domain in front of the generated execute-api URL. Leave BOTH unset to
+   # keep the plain execute-api URL. An API Gateway custom domain name is globally unique,
+   # so only ONE deployment may claim a given name.
+   API_DOMAIN_NAME = '' # e.g. routing-api.doma.xyz
+   API_CERTIFICATE_ARN = '' # ACM cert ARN. MUST be in us-east-1 (the API is EDGE-optimized).
    ```
 3. Install and build the package
    ```
@@ -177,6 +182,125 @@ tokenInAddress=<TOKEN_IN>&tokenInChainId=<CHAIN_ID>\
 &tokenOutAddress=<TOKEN_OUT>&tokenOutChainId=<CHAIN_ID>\
 &amount=1000000000000000000&type=exactIn" | jq '{quote: .quote, routeLen: (.route | length)}'
 ```
+
+---
+
+## Custom domain (`routing-api.doma.xyz`)
+
+Optional. Leave `API_DOMAIN_NAME` and `API_CERTIFICATE_ARN` unset and the stack deploys exactly
+as before, serving the generated `execute-api` URL. Set **both** to put a vanity host in front
+of it.
+
+Two constraints shape the steps:
+
+- **The ACM certificate must live in `us-east-1`.** `RoutingAPIStack` sets no
+  `endpointConfiguration`, so the API is EDGE-optimized (the CloudFormation default), and an
+  EDGE custom domain only accepts a certificate from `us-east-1` — regardless of which region
+  the stack is deployed to.
+- **`doma.xyz` is hosted in Cloudflare, not Route 53.** CDK cannot write the ACM validation
+  record, so the certificate is issued out of band and passed in by ARN. Issuing it in-stack
+  would leave CloudFormation blocked on validation until someone added the record by hand.
+
+> An API Gateway custom domain name is **globally unique across all AWS accounts**, so only one
+> deployment may claim `routing-api.doma.xyz`. Set these two vars for that environment only and
+> leave them unset everywhere else.
+
+### Step 1 — Request the certificate in `us-east-1` (one-time)
+
+```bash
+CERT_ARN=$(aws acm request-certificate \
+  --region us-east-1 \
+  --domain-name routing-api.doma.xyz \
+  --validation-method DNS \
+  --query CertificateArn --output text)
+
+echo "$CERT_ARN"
+```
+
+### Step 2 — Read the validation record
+
+ACM DNS validation uses a **CNAME**, not a TXT record.
+
+```bash
+aws acm describe-certificate \
+  --region us-east-1 \
+  --certificate-arn "$CERT_ARN" \
+  --query 'Certificate.DomainValidationOptions[0].ResourceRecord'
+```
+
+Output looks like:
+
+```json
+{
+  "Name": "_abc123.routing-api.doma.xyz.",
+  "Type": "CNAME",
+  "Value": "_def456.xxxxxxxx.acm-validations.aws."
+}
+```
+
+### Step 3 — Create that CNAME in Cloudflare
+
+In the `doma.xyz` zone, add a **CNAME** record using the `Name` and `Value` above, set to
+**DNS only (grey cloud)**. A proxied record breaks validation.
+
+Cloudflare appends the zone automatically, so paste the `Name` without the trailing
+`.doma.xyz.` — e.g. `_abc123.routing-api`.
+
+Then wait for issuance (polls until `ISSUED`, exits non-zero on timeout):
+
+```bash
+aws acm wait certificate-validated --region us-east-1 --certificate-arn "$CERT_ARN"
+
+aws acm describe-certificate --region us-east-1 --certificate-arn "$CERT_ARN" \
+  --query 'Certificate.Status'
+# expect: "ISSUED"
+```
+
+### Step 4 — Deploy with the domain configured
+
+Add to `.env`:
+
+```
+API_DOMAIN_NAME=routing-api.doma.xyz
+API_CERTIFICATE_ARN=<the CERT_ARN from Step 1>
+```
+
+Deploy as usual, then read the CloudFront hostname the stack outputs:
+
+```bash
+aws cloudformation describe-stacks \
+  --stack-name RoutingAPIStack \
+  --region $TARGET_REGION \
+  --query 'Stacks[0].Outputs[?OutputKey==`CustomDomainTarget`].OutputValue' \
+  --output text
+# e.g. d1a2b3c4d5e6f7.cloudfront.net
+# (EDGE domains resolve to a CloudFront hostname. A REGIONAL one would instead
+#  look like d-abc123.execute-api.<region>.amazonaws.com.)
+```
+
+### Step 5 — Point the hostname at it in Cloudflare
+
+Add a second **CNAME**: `routing-api` → the `CustomDomainTarget` value, again **DNS only
+(grey cloud)**. Proxying would stack Cloudflare in front of CloudFront for no benefit and
+interferes with the TLS handshake the EDGE domain expects.
+
+### Step 6 — Verify
+
+```bash
+# Certificate chain and HTTP status
+curl -s -o /dev/null -w 'http=%{http_code} tls_verify=%{ssl_verify_result}\n' \
+  https://routing-api.doma.xyz/quote
+
+# Real quote — note there is no /prod prefix: the base path maps to the deployed stage
+curl -s "https://routing-api.doma.xyz/quote?\
+tokenInAddress=<TOKEN_IN>&tokenInChainId=97476\
+&tokenOutAddress=<TOKEN_OUT>&tokenOutChainId=97476\
+&amount=1000000000000000000&type=exactIn" | jq '{quote: .quote, routeLen: (.route | length)}'
+```
+
+> On first creation, the CloudFront distribution behind an EDGE domain can take up to ~40
+> minutes to propagate. A 403 right after deploying usually means "not ready yet", not
+> "misconfigured".
 
 ---
 
