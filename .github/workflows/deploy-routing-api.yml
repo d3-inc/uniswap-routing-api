@@ -34,10 +34,24 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # workflow_dispatch lets the operator pick any branch, and this job deploys
+      # straight to the live mainnet stack. Fail before AWS credentials are issued
+      # if it was launched from anything but main.
+      - name: Guard - only main is deployable
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          if [ "$REF_TYPE" != "branch" ] || [ "$REF_NAME" != "main" ]; then
+            echo "::error::Dispatched from $REF_TYPE '$REF_NAME'. This workflow only deploys the main branch; re-run it with main selected."
+            exit 1
+          fi
+
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.ref_name }}
+          # Pinned literally: the deployed code is always main, never the dispatch ref.
+          ref: main
 
       - name: Setup Node.js
         uses: actions/setup-node@v4

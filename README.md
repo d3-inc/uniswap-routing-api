@@ -72,86 +72,87 @@ The best way to develop and test the API is to deploy your own instance to AWS.
    curl --request GET '<INSERT_YOUR_URL_HERE>/quote?tokenInAddress=0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2&tokenInChainId=1&tokenOutAddress=0x1f9840a85d5af5bf1d1762f925bdaddc4201f984&tokenOutChainId=1&amount=100&type=exactIn'
    ```
 
-## Deploying to a new region (via GitHub Actions)
+## Deploying via GitHub Actions
 
-The deploy workflow ([.github/workflows/deploy-routing-api.yml](.github/workflows/deploy-routing-api.yml)) picks the AWS region based on the branch name:
+The deploy workflow ([.github/workflows/deploy-routing-api.yml](.github/workflows/deploy-routing-api.yml))
+is triggered manually (`workflow_dispatch`) and always deploys to **us-east-1**.
 
-| Branch | Region |
-|---|---|
-| `main` | `us-west-1` (production) |
-| any other branch | `us-east-2` (default test) |
+Earlier revisions picked the region from the branch name (`main` → us-west-1, anything else →
+us-east-2). That mapping is gone: every branch now deploys to the same stack, so triggering the
+workflow on a feature branch updates production. Deploy from `main` unless you mean otherwise.
 
-To target a different test region, add a branch-specific entry to the `Select AWS region` step in the workflow.
+### Deploy configuration
 
-### Step 1 — Bootstrap CDK in the target region (one-time)
+Non-secret settings live in the workflow's `env:` block, where they are reviewable in a pull
+request — there is no `DOTENV` secret any more:
 
-CDK needs an S3 bucket and IAM roles in every region before it can deploy there. Run once from your local machine with credentials for the target AWS account:
-
-```bash
-export TARGET_REGION=us-east-1      # change to your target region
-export AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-
-cdk bootstrap aws://${AWS_ACCOUNT_ID}/${TARGET_REGION}
+```yaml
+env:
+  AWS_REGION: us-east-1
+  ENVIRONMENT: mainnet            # suffixes the DynamoDB table names
+  API_DOMAIN_NAME: routing-api.doma.xyz
+  METRICS_SAMPLE_RATE: '0.05'
+  ROUTING_LAMBDA_MEMORY_SIZE: '1024'
+  TRACING: 'false'
+  QUICKNODE_97476: https://rpc-testnet.doma.xyz
+  QUICKNODE_97477: https://rpc.doma.xyz
 ```
 
-Verify it succeeded:
+This works because `bin/app.ts` calls `dotenv.config()`, which does **not** overwrite variables
+already present in the environment. No `.env` file is created in the runner.
+
+> Do not commit a local `.env` to replace this. It stays in `.gitignore`: this repository is
+> **public**, and `.env` is where credentials land the moment anyone fills in
+> `TENDERLY_ACCESS_KEY` or an RPC URL with an embedded API key.
+
+### Required secrets
+
+Set in **GitHub → Settings → Secrets and variables → Actions**. Only three are needed:
+
+| Secret | Why it must stay secret |
+|---|---|
+| `AWS_ROLE_ARN` | IAM role CDK assumes (trusts GitHub OIDC). Embeds the AWS account id |
+| `NODE_AUTH_TOKEN` | GitHub PAT with `read:packages` for the private `@d3-inc/*` SDKs |
+| `SLACK_WEBHOOK` | (optional) Anyone with the URL can post to the channel |
+
+`DOTENV`, `DOTENV_MAIN` and `DOTENV_OTHER` are no longer referenced and can be deleted.
+
+The ACM certificate ARN is resolved at deploy time by domain name instead of being stored,
+since the ARN embeds the account id. That step needs `acm:ListCertificates` on the deploy role;
+if you would rather not grant it, delete the step and add an `API_CERTIFICATE_ARN` secret.
+
+### One-time: bootstrap CDK in the target region
+
+CDK needs an S3 assets bucket and IAM roles in a region before it can deploy there. Already done
+for us-east-1 — only needed if you add a region:
 
 ```bash
-aws cloudformation describe-stacks \
-  --stack-name CDKToolkit \
-  --region $TARGET_REGION \
-  --query 'Stacks[0].StackStatus'
+export TARGET_REGION=us-east-1
+export AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+
+npx aws-cdk@2.1128.1 bootstrap aws://${AWS_ACCOUNT_ID}/${TARGET_REGION}
+
+aws cloudformation describe-stacks --stack-name CDKToolkit \
+  --region $TARGET_REGION --query 'Stacks[0].StackStatus'
 # expect: "CREATE_COMPLETE" or "UPDATE_COMPLETE"
 ```
 
-### Step 2 — Update the branch→region mapping in the workflow
-
-Edit the `Select AWS region based on branch` step in [.github/workflows/deploy-routing-api.yml](.github/workflows/deploy-routing-api.yml):
-
-```yaml
-- name: Select AWS region based on branch
-  run: |
-    if [ "${GITHUB_REF_NAME}" = "main" ]; then
-      echo "AWS_REGION=us-west-1" >> $GITHUB_ENV
-    elif [ "${GITHUB_REF_NAME}" = "test-node24" ]; then
-      echo "AWS_REGION=us-east-1" >> $GITHUB_ENV   # your new test region
-    else
-      echo "AWS_REGION=us-east-2" >> $GITHUB_ENV
-    fi
-```
-
-### Step 3 — Check GitHub secrets
-
-Ensure the following secrets are set in **GitHub → Settings → Secrets and variables → Actions**:
-
-| Secret | Purpose |
-|---|---|
-| `AWS_ROLE_ARN` | IAM role CDK assumes (must trust GitHub OIDC and have deploy permissions in the target region/account) |
-| `DOTENV` | Contents of the `.env` file injected at deploy time |
-| `NODE_AUTH_TOKEN` | GitHub token for installing `@d3-inc` private packages |
-| `SLACK_WEBHOOK` | (optional) Slack notifications on deploy completion/failure |
-
-If the new test region uses a different AWS account, `AWS_ROLE_ARN` must reference a role in that account. If it needs different environment variables, add a second secret (e.g. `DOTENV_TEST`) and reference it in the workflow for that branch.
-
-### Step 4 — Push your branch and trigger the workflow
+### Trigger a deploy
 
 ```bash
-git checkout -b test-node24
-git push origin test-node24
-
-# Trigger via GitHub CLI:
-gh workflow run deploy-routing-api.yml --ref test-node24
+# Trigger via GitHub CLI (every branch deploys to the same us-east-1 stack):
+gh workflow run deploy-routing-api.yml --ref main
 
 # Watch the run:
 gh run watch $(gh run list --workflow=deploy-routing-api.yml --limit 1 --json databaseId --jq '.[0].databaseId')
 ```
 
-Or go to **Actions → Deploy Uniswap Routing API → Run workflow** and select your branch.
+Or go to **Actions → Deploy Uniswap Routing API → Run workflow** and select the branch.
 
-### Step 5 — Verify the deploy
+### Verify the deploy
 
 ```bash
-export TARGET_REGION=us-east-1   # your test region
+export TARGET_REGION=us-east-1
 
 # Stack status
 aws cloudformation describe-stacks \
