@@ -11,6 +11,24 @@ permissions:
 env:
   NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
 
+  # Single deploy target
+  AWS_REGION: us-east-1
+
+  ENVIRONMENT: mainnet
+  API_DOMAIN_NAME: routing-api.doma.xyz
+  METRICS_SAMPLE_RATE: '0.05'
+  ROUTING_LAMBDA_MEMORY_SIZE: '1024'
+  TRACING: 'false'
+  QUICKNODE_97476: https://rpc-testnet.doma.xyz
+  QUICKNODE_97477: https://rpc.doma.xyz
+  # Empty on purpose — matches the values the live stack was deployed with.
+  GQL_URL: ''
+  GQL_H_ORGN: ''
+  TENDERLY_USER: ''
+  TENDERLY_PROJECT: ''
+  TENDERLY_ACCESS_KEY: ''
+  TENDERLY_NODE_API_KEY: ''
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -28,28 +46,11 @@ jobs:
           registry-url: 'https://npm.pkg.github.com'
           scope: '@d3-inc'
 
-      - name: Create .env file
-        run: |
-          if [ "${GITHUB_REF_NAME}" = "main" ]; then
-            printf "%s" "${{ secrets.DOTENV_MAIN }}" > .env
-          else
-            printf "%s" "${{ secrets.DOTENV_OTHER }}" > .env
-          fi
-          ls -la .env
-        
       - name: Install dependencies
         run: npm install
 
       - name: Build project
         run: npm run build
-
-      - name: Select AWS region based on branch
-        run: |
-          if [ "${GITHUB_REF_NAME}" = "main" ]; then
-            echo "AWS_REGION=us-west-1" >> $GITHUB_ENV
-          else
-            echo "AWS_REGION=us-east-2" >> $GITHUB_ENV
-          fi
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -57,8 +58,21 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Show selected AWS region
-        run: echo "Deploying to region:" $AWS_REGION
+      - name: Resolve ACM certificate for ${{ env.API_DOMAIN_NAME }}
+        run: |
+          set -euo pipefail
+          ARN=$(aws acm list-certificates \
+            --region "$AWS_REGION" \
+            --certificate-statuses ISSUED \
+            --query "CertificateSummaryList[?DomainName=='${API_DOMAIN_NAME}'].CertificateArn | [0]" \
+            --output text)
+          if [ -z "$ARN" ] || [ "$ARN" = "None" ]; then
+            echo "::error::No ISSUED ACM certificate for ${API_DOMAIN_NAME} in ${AWS_REGION}."
+            echo "::error::The API is EDGE-optimized, so the certificate must live in us-east-1."
+            exit 1
+          fi
+          echo "Using certificate $ARN"
+          echo "API_CERTIFICATE_ARN=$ARN" >> "$GITHUB_ENV"
 
       - name: Install CDK CLI
         # Must be >= the aws-cdk-lib version's required CLI. aws-cdk-lib is pinned to 2.230.0
