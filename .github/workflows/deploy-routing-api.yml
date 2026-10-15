@@ -17,7 +17,10 @@ env:
   ENVIRONMENT: mainnet
   API_DOMAIN_NAME: routing-api.doma.xyz
   METRICS_SAMPLE_RATE: '0.05'
-  ROUTING_LAMBDA_MEMORY_SIZE: '1024'
+  # 1769 MB == 1 full vCPU (Lambda scales CPU linearly with memory).
+  # Not lower: RoutingLambda2 peaked at 1187 MB over 30d in us-west-1, so the
+  # previous 1024 would have been killed OOM. Leaves ~33% headroom.
+  ROUTING_LAMBDA_MEMORY_SIZE: '1769'
   TRACING: 'false'
   QUICKNODE_97476: https://rpc-testnet.doma.xyz
   QUICKNODE_97477: https://rpc.doma.xyz
