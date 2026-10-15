@@ -1,13 +1,17 @@
-import { SUPPORTED_CHAINS } from '@uniswap/smart-order-router'
+// Use this fork's chain list, not the SDK's. The SDK exports all 28 chains upstream
+// supports; this fork serves only DOMA
+import { SUPPORTED_CHAINS } from '../../lib/handlers/injector-sor'
 import * as cdk from 'aws-cdk-lib'
 import { CfnOutput, Duration } from 'aws-cdk-lib'
 import { ChainId } from '@uniswap/sdk-core'
 import * as aws_apigateway from 'aws-cdk-lib/aws-apigateway'
 import { MethodLoggingLevel } from 'aws-cdk-lib/aws-apigateway'
+import * as aws_certificatemanager from 'aws-cdk-lib/aws-certificatemanager'
 import * as aws_cloudwatch from 'aws-cdk-lib/aws-cloudwatch'
 import { ComparisonOperator, MathExpression } from 'aws-cdk-lib/aws-cloudwatch'
 import * as aws_cloudwatch_actions from 'aws-cdk-lib/aws-cloudwatch-actions'
 import * as aws_logs from 'aws-cdk-lib/aws-logs'
+import { RetentionDays } from 'aws-cdk-lib/aws-logs'
 import * as aws_sns from 'aws-cdk-lib/aws-sns'
 import * as aws_waf from 'aws-cdk-lib/aws-wafv2'
 import { Construct } from 'constructs'
@@ -22,7 +26,14 @@ import { RpcGatewayFallbackStack } from './rpc-gateway-fallback-stack'
 import { chainProtocols } from '../../lib/cron/cache-config'
 
 export const CHAINS_NOT_MONITORED: ChainId[] = TESTNETS
-export const REQUEST_SOURCES_NOT_MONITORED = ['unknown']
+
+export const REQUEST_SOURCES_NOT_MONITORED = [
+  'unknown',
+  'uniswap-ios',
+  'uniswap-android',
+  'uniswap-web',
+  'uniswap-extension',
+]
 
 // For low volume chains, we'll increase the evaluation periods to reduce triggering sensitivity.
 export const LOW_VOLUME_CHAINS: Set<ChainId> = new Set([
@@ -321,12 +332,14 @@ export class RoutingAPIStack extends cdk.Stack {
       uniGraphQLHeaderOrigin,
     })
 
-    const accessLogGroup = new aws_logs.LogGroup(this, 'RoutingAPIGAccessLogs')
+    const accessLogGroup = new aws_logs.LogGroup(this, 'RoutingAPIGAccessLogs', {
+      retention: RetentionDays.THREE_DAYS,
+    })
 
     const api = new aws_apigateway.RestApi(this, 'routing-api', {
       restApiName: 'Routing API',
       deployOptions: {
-        tracingEnabled: true,
+        tracingEnabled: process.env.TRACING !== 'false',
         loggingLevel: MethodLoggingLevel.ERROR,
         accessLogDestination: new aws_apigateway.LogGroupLogDestination(accessLogGroup),
         accessLogFormat: aws_apigateway.AccessLogFormat.jsonWithStandardFields({
@@ -346,6 +359,45 @@ export class RoutingAPIStack extends cdk.Stack {
         allowMethods: aws_apigateway.Cors.ALL_METHODS,
       },
     })
+
+    // Optional vanity domain (e.g. routing-api.doma.xyz) in front of the generated
+    // execute-api URL. Both vars must be set or the block is skipped entirely, so an
+    // unconfigured environment keeps deploying exactly as before.
+    //
+    // This RestApi is EDGE-optimized (no endpointConfiguration is set, and EDGE is the
+    // CloudFormation default), so the certificate MUST live in us-east-1 regardless of
+    // which region this stack is deployed to.
+    const apiDomainName = process.env.API_DOMAIN_NAME
+    const apiCertificateArn = process.env.API_CERTIFICATE_ARN
+
+    if (apiDomainName && apiCertificateArn) {
+      const customDomain = new aws_apigateway.DomainName(this, 'RoutingAPIDomainName', {
+        domainName: apiDomainName,
+        certificate: aws_certificatemanager.Certificate.fromCertificateArn(
+          this,
+          'RoutingAPICertificate',
+          apiCertificateArn
+        ),
+        endpointType: aws_apigateway.EndpointType.EDGE,
+        securityPolicy: aws_apigateway.SecurityPolicy.TLS_1_2,
+      })
+
+      // Map the domain root to the API's deployed stage, so the vanity host serves
+      // /quote directly instead of /prod/quote.
+      customDomain.addBasePathMapping(api, { stage: api.deploymentStage })
+
+      // The CNAME target to create in Cloudflare. Must be DNS-only (grey cloud):
+      // proxying it puts Cloudflare in front of CloudFront for no benefit, and breaks
+      // the TLS handshake API Gateway expects for an EDGE domain.
+      new CfnOutput(this, 'CustomDomainTarget', {
+        value: customDomain.domainNameAliasDomainName,
+        description: `Create a DNS-only CNAME: ${apiDomainName} -> this value`,
+      })
+
+      new CfnOutput(this, 'CustomDomainUrl', {
+        value: `https://${apiDomainName}`,
+      })
+    }
 
     const ipThrottlingACL = new aws_waf.CfnWebACL(this, 'RoutingAPIIPThrottlingACL', {
       defaultAction: { allow: {} },
@@ -537,41 +589,9 @@ export class RoutingAPIStack extends cdk.Stack {
       evaluationPeriods: 3,
       treatMissingData: aws_cloudwatch.TreatMissingData.NOT_BREACHING, // Missing data points are treated as "good" and within the threshold
     })
-    const simulationAlarmByChainSev2: cdk.aws_cloudwatch.Alarm[] = []
-    SUPPORTED_CHAINS.forEach((chainId) => {
-      if (CHAINS_NOT_MONITORED.includes(chainId)) {
-        return
-      }
-
-      const simulationAlarmSev2 = new aws_cloudwatch.Alarm(this, `RoutingAPI-SEV2-SimulationChainId${chainId}`, {
-        alarmName: `RoutingAPI-SEV2-SimulationChainId${chainId}`,
-        metric: new MathExpression({
-          expression: `100*(simulationSystemDown/simulationRequested)`,
-          period: Duration.minutes(30),
-          usingMetrics: {
-            simulationRequested: new aws_cloudwatch.Metric({
-              namespace: 'Uniswap',
-              metricName: `Simulation Requested`,
-              dimensionsMap: { Service: 'RoutingAPI' },
-              unit: aws_cloudwatch.Unit.COUNT,
-              statistic: 'sum',
-            }),
-            simulationSystemDown: new aws_cloudwatch.Metric({
-              namespace: 'Uniswap',
-              metricName: `SimulationSystemDownChainId${chainId}`,
-              dimensionsMap: { Service: 'RoutingAPI' },
-              unit: aws_cloudwatch.Unit.COUNT,
-              statistic: 'sum',
-            }),
-          },
-        }),
-        threshold: 20,
-        evaluationPeriods: 3,
-        treatMissingData: aws_cloudwatch.TreatMissingData.NOT_BREACHING, // Missing data points are treated as "good" and within the threshold
-      })
-
-      simulationAlarmByChainSev2.push(simulationAlarmSev2)
-    })
+    // Per-chain simulation alarms removed: the global simulationAlarmSev2 above already
+    // covers aggregate simulation downtime. Per-chain alarms used the same shared
+    // "Simulation Requested" denominator, making them redundant and adding 17 alarms per region.
 
     // Create an alarm for when GraphQLTokenFeeFetcherFetchFeesFailure rate goes above 15%.
     // We do have on chain fallback in place of GQL failure, but we want to be alerted if the failure rate is high to take action.
@@ -951,9 +971,6 @@ export class RoutingAPIStack extends cdk.Stack {
         alarm.addAlarmAction(new aws_cloudwatch_actions.SnsAction(chatBotTopic))
       })
       successRateByRequestSourceAndChainIdAlarm.forEach((alarm) => {
-        alarm.addAlarmAction(new aws_cloudwatch_actions.SnsAction(chatBotTopic))
-      })
-      simulationAlarmByChainSev2.forEach((alarm) => {
         alarm.addAlarmAction(new aws_cloudwatch_actions.SnsAction(chatBotTopic))
       })
       subgraphAlertAlarms.forEach((alarm) => {

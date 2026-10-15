@@ -320,11 +320,30 @@ export class RoutingCachingStack extends cdk.NestedStack {
 
     const region = cdk.Stack.of(this).region
 
-    const lambdaLayerVersion = aws_lambda.LayerVersion.fromLayerVersionArn(
-      this,
-      'InsightsLayerPools',
-      `arn:aws:lambda:${region}:580247275435:layer:LambdaInsightsExtension:14`
-    )
+    const insightsEnabled = process.env.LAMBDA_INSIGHTS_ENABLED === 'true'
+
+    const poolCacheInsightsLayers = insightsEnabled
+      ? [
+          aws_lambda.LayerVersion.fromLayerVersionArn(
+            this,
+            'InsightsLayerPools',
+            `arn:aws:lambda:${region}:580247275435:layer:LambdaInsightsExtension:14`
+          ),
+        ]
+      : []
+
+    const tokenListInsightsLayers = insightsEnabled
+      ? [
+          aws_lambda.LayerVersion.fromLayerVersionArn(
+            this,
+            'InsightsLayerTokenList',
+            `arn:aws:lambda:${region}:580247275435:layer:LambdaInsightsExtension:14`
+          ),
+        ]
+      : []
+
+    // TRACING env var defaults to ACTIVE unless set to 'false'
+    const tracingMode = process.env.TRACING === 'false' ? aws_lambda.Tracing.DISABLED : aws_lambda.Tracing.ACTIVE
 
     // Spin up a new pool cache lambda for each config in chain X protocol
     for (let i = 0; i < chainProtocols.length; i++) {
@@ -334,7 +353,7 @@ export class RoutingCachingStack extends cdk.NestedStack {
         `PoolCacheLambda-ChainId${chainId}-Protocol${protocol}`,
         {
           role: lambdaRole,
-          runtime: aws_lambda.Runtime.NODEJS_18_X,
+          runtime: aws_lambda.Runtime.NODEJS_24_X,
           entry: path.join(__dirname, '../../lib/cron/cache-pools.ts'),
           handler: 'handler',
           timeout: Duration.seconds(900),
@@ -344,8 +363,8 @@ export class RoutingCachingStack extends cdk.NestedStack {
             sourceMap: true,
           },
           description: `Pool Cache Lambda for Chain with ChainId ${chainId} and Protocol ${protocol}`,
-          layers: [lambdaLayerVersion],
-          tracing: aws_lambda.Tracing.ACTIVE,
+          layers: poolCacheInsightsLayers,
+          tracing: tracingMode,
           environment: {
             VERSION: '5',
             POOL_CACHE_BUCKET: this.poolCacheBucket.bucketName,
@@ -410,6 +429,7 @@ export class RoutingCachingStack extends cdk.NestedStack {
             chainId: chainId.toString(),
             protocol,
             timeout: timeout.toString(),
+            METRICS_SAMPLE_RATE: process.env.METRICS_SAMPLE_RATE ?? '0.05',
           },
         }
       )
@@ -463,7 +483,7 @@ export class RoutingCachingStack extends cdk.NestedStack {
 
     const tokenListCachingLambda = new aws_lambda_nodejs.NodejsFunction(this, 'TokenListCacheLambda', {
       role: lambdaRole,
-      runtime: aws_lambda.Runtime.NODEJS_18_X,
+      runtime: aws_lambda.Runtime.NODEJS_24_X,
       entry: path.join(__dirname, '../../lib/cron/cache-token-lists.ts'),
       handler: 'handler',
       timeout: Duration.seconds(180),
@@ -472,15 +492,9 @@ export class RoutingCachingStack extends cdk.NestedStack {
         minify: true,
         sourceMap: true,
       },
-      layers: [
-        aws_lambda.LayerVersion.fromLayerVersionArn(
-          this,
-          'InsightsLayerTokenList',
-          `arn:aws:lambda:${region}:580247275435:layer:LambdaInsightsExtension:14`
-        ),
-      ],
+      layers: tokenListInsightsLayers,
       description: 'Token List Cache Lambda',
-      tracing: aws_lambda.Tracing.ACTIVE,
+      tracing: tracingMode,
       environment: {
         TOKEN_LIST_CACHE_BUCKET: this.tokenListCacheBucket.bucketName,
       },

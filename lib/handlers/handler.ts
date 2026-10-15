@@ -1,5 +1,6 @@
 import Joi from '@hapi/joi'
 import { metricScope, MetricsLogger } from 'aws-embedded-metrics'
+import { NoopRoutingMetrics, RoutingMetrics } from './metrics'
 import {
   APIGatewayProxyEvent,
   APIGatewayProxyEventQueryStringParameters,
@@ -7,6 +8,7 @@ import {
   Context,
 } from 'aws-lambda'
 import { default as bunyan, default as Logger } from 'bunyan'
+const METRICS_SAMPLE_RATE = Number(process.env.METRICS_SAMPLE_RATE ?? '1')
 
 export type APIGatewayProxyHandler = (event: APIGatewayProxyEvent, context: Context) => Promise<APIGatewayProxyResult>
 
@@ -59,7 +61,7 @@ export abstract class Injector<CInj, RInj extends BaseRInj, ReqBody, ReqQueryPar
     event: APIGatewayProxyEvent,
     context: Context,
     log: Logger,
-    metrics: MetricsLogger
+    metrics: RoutingMetrics
   ): Promise<RInj>
 
   public abstract buildContainerInjected(): Promise<CInj>
@@ -109,122 +111,146 @@ export abstract class APIGLambdaHandler<CInj, RInj extends BaseRInj, ReqBody, Re
   }
 
   private buildHandler(): APIGatewayProxyHandler {
-    return metricScope(
+    const handlerWithMetrics = metricScope(
       (metric: MetricsLogger) =>
         async (event: APIGatewayProxyEvent, context: Context): Promise<APIGatewayProxyResult> => {
-          const requestStart = Date.now()
-
-          let log: Logger = bunyan.createLogger({
-            name: this.handlerName,
-            serializers: bunyan.stdSerializers,
-            level: bunyan.INFO,
-            requestId: context.awsRequestId,
-          })
-
-          log.info({ event, context }, 'Request started.')
-
-          let requestBody: ReqBody
-          let requestQueryParams: ReqQueryParams
-          try {
-            const requestValidation = await this.parseAndValidateRequest(event, log)
-
-            if (requestValidation.state == 'invalid') {
-              return requestValidation.errorResponse
-            }
-
-            requestBody = requestValidation.requestBody
-            requestQueryParams = requestValidation.requestQueryParams
-          } catch (err) {
-            log.error({ err }, 'Unexpected error validating request')
-            return INTERNAL_ERROR()
-          }
-
-          const injector = await this.injectorPromise
-
-          const containerInjected = await injector.getContainerInjected()
-
-          let requestInjected: RInj
-          try {
-            requestInjected = await injector.getRequestInjected(
-              containerInjected,
-              requestBody,
-              requestQueryParams,
-              event,
-              context,
-              log,
-              metric
-            )
-          } catch (err) {
-            log.error({ err, event }, 'Unexpected error building request injected.')
-            return INTERNAL_ERROR()
-          }
-
-          const { id } = requestInjected
-
-          ;({ log } = requestInjected)
-
-          let statusCode: number
-          let body: Res
-
-          try {
-            const handleRequestResult = await this.handleRequest({
-              context,
-              event,
-              requestBody,
-              requestQueryParams,
-              containerInjected,
-              requestInjected,
-            })
-
-            if (this.isError(handleRequestResult)) {
-              log.info({ handleRequestResult }, 'Handler did not return a 200')
-              const { statusCode, detail, errorCode } = handleRequestResult
-              const response = JSON.stringify({ detail, errorCode, id })
-
-              log.info({ statusCode, response }, `Request ended. ${statusCode}`)
-              return {
-                statusCode,
-                body: response,
-              }
-            } else {
-              log.info(
-                { requestBody, requestQueryParams, requestDuration: Date.now() - requestStart },
-                'Handler returned 200'
-              )
-              ;({ body, statusCode } = handleRequestResult)
-            }
-          } catch (err) {
-            log.error({ err }, 'Unexpected error in handler')
-            return INTERNAL_ERROR(id)
-          }
-
-          let response: Res
-          try {
-            const responseValidation = await this.parseAndValidateResponse(body, id, log)
-
-            if (responseValidation.state == 'invalid') {
-              return responseValidation.errorResponse
-            }
-
-            response = responseValidation.response
-          } catch (err) {
-            log.error({ err }, 'Unexpected error validating response')
-            return INTERNAL_ERROR(id)
-          }
-
-          log.info({ statusCode, response }, `Request ended. ${statusCode}`)
-
-          this.afterHandler(metric, response, requestStart)
-
-          return {
-            statusCode,
-            body: JSON.stringify(response),
-          }
+          return this.executeHandler(event, context, metric)
         }
     )
+
+    const handlerWithoutMetrics = async (
+      event: APIGatewayProxyEvent,
+      context: Context
+    ): Promise<APIGatewayProxyResult> => {
+      return this.executeHandler(event, context, new NoopRoutingMetrics())
+    }
+
+    return async (event, context) => {
+      if (Math.random() < METRICS_SAMPLE_RATE) {
+        return handlerWithMetrics(event, context)
+      }
+
+      return handlerWithoutMetrics(event, context)
+    }
   }
 
-  protected afterHandler(_: MetricsLogger, __: Res, ___: number): void {}
+  private async executeHandler(
+    event: APIGatewayProxyEvent,
+    context: Context,
+    metric: RoutingMetrics
+  ): Promise<APIGatewayProxyResult> {
+    const requestStart = Date.now()
+    const LOG_LEVEL = (process.env.LOG_LEVEL as Logger.LogLevel) || 'warn'
+
+    let log: Logger = bunyan.createLogger({
+      name: this.handlerName,
+      serializers: bunyan.stdSerializers,
+      level: LOG_LEVEL,
+      requestId: context.awsRequestId,
+    })
+
+    log.debug({ requestId: context.awsRequestId }, 'Request started')
+
+    let requestBody: ReqBody
+    let requestQueryParams: ReqQueryParams
+    try {
+      const requestValidation = await this.parseAndValidateRequest(event, log)
+
+      if (requestValidation.state == 'invalid') {
+        return requestValidation.errorResponse
+      }
+
+      requestBody = requestValidation.requestBody
+      requestQueryParams = requestValidation.requestQueryParams
+    } catch (err) {
+      log.error({ err }, 'Unexpected error validating request')
+      return INTERNAL_ERROR()
+    }
+
+    const injector = await this.injectorPromise
+
+    const containerInjected = await injector.getContainerInjected()
+
+    let requestInjected: RInj
+    try {
+      requestInjected = await injector.getRequestInjected(
+        containerInjected,
+        requestBody,
+        requestQueryParams,
+        event,
+        context,
+        log,
+        metric
+      )
+    } catch (err) {
+      log.error({ err, event }, 'Unexpected error building request injected.')
+      return INTERNAL_ERROR()
+    }
+
+    const { id } = requestInjected
+
+    log.level(LOG_LEVEL)
+
+    let statusCode: number
+    let body: Res
+
+    try {
+      const handleRequestResult = await this.handleRequest({
+        context,
+        event,
+        requestBody,
+        requestQueryParams,
+        containerInjected,
+        requestInjected,
+      })
+
+      if (this.isError(handleRequestResult)) {
+        log.debug({ handleRequestResult }, 'Handler did not return a 200')
+        const { statusCode, detail, errorCode } = handleRequestResult
+        const response = JSON.stringify({ detail, errorCode, id })
+
+        log.debug({ statusCode, response }, `Request ended. ${statusCode}`)
+        return {
+          statusCode,
+          body: response,
+        }
+      } else {
+        log.debug(
+          { requestBody, requestQueryParams, requestDuration: Date.now() - requestStart },
+          'Handler returned 200'
+        )
+        ;({ body, statusCode } = handleRequestResult)
+      }
+    } catch (err) {
+      log.error({ err }, 'Unexpected error in handler')
+      return INTERNAL_ERROR(id)
+    }
+
+    let response: Res
+    try {
+      const responseValidation = await this.parseAndValidateResponse(body, id, log)
+
+      if (responseValidation.state == 'invalid') {
+        return responseValidation.errorResponse
+      }
+
+      response = responseValidation.response
+    } catch (err) {
+      log.error({ err }, 'Unexpected error validating response')
+      return INTERNAL_ERROR(id)
+    }
+
+    log.debug({ statusCode, response }, `Request ended. ${statusCode}`)
+
+    this.afterHandler(metric, response, requestStart)
+
+    return {
+      statusCode,
+      body: JSON.stringify(response),
+    }
+  }
+
+  protected afterHandler(_: RoutingMetrics, __: Res, ___: number): void {}
 
   public abstract handleRequest(
     params: HandleRequestParams<CInj, RInj, ReqBody, ReqQueryParams>
@@ -279,7 +305,9 @@ export abstract class APIGLambdaHandler<CInj, RInj extends BaseRInj, ReqBody, Re
       })
 
       if (queryParamsValidation.error) {
-        log.info({ queryParamsValidation }, 'Request failed validation')
+        // A failed schema validation is a client 400, not a server fault. WARN keeps it visible
+        // under the default LOG_LEVEL floor without inflating error-rate metrics.
+        log.warn({ queryParamsValidation }, 'Request failed validation')
         return {
           state: 'invalid',
           errorResponse: {
@@ -305,7 +333,7 @@ export abstract class APIGLambdaHandler<CInj, RInj extends BaseRInj, ReqBody, Re
       })
 
       if (bodyValidation.error) {
-        log.info({ bodyValidation }, 'Request failed validation')
+        log.warn({ bodyValidation }, 'Request failed validation')
         return {
           state: 'invalid',
           errorResponse: {

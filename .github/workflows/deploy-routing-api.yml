@@ -11,45 +11,60 @@ permissions:
 env:
   NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
 
+  # Single deploy target
+  AWS_REGION: us-east-1
+
+  ENVIRONMENT: mainnet
+  API_DOMAIN_NAME: routing-api.doma.xyz
+  METRICS_SAMPLE_RATE: '0.05'
+  ROUTING_LAMBDA_MEMORY_SIZE: '1024'
+  TRACING: 'false'
+  QUICKNODE_97476: https://rpc-testnet.doma.xyz
+  QUICKNODE_97477: https://rpc.doma.xyz
+  # Empty on purpose — matches the values the live stack was deployed with.
+  GQL_URL: ''
+  GQL_H_ORGN: ''
+  TENDERLY_USER: ''
+  TENDERLY_PROJECT: ''
+  TENDERLY_ACCESS_KEY: ''
+  TENDERLY_NODE_API_KEY: ''
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
+      # workflow_dispatch lets the operator pick any branch, and this job deploys
+      # straight to the live mainnet stack. Fail before AWS credentials are issued
+      # if it was launched from anything but main.
+      - name: Guard - only main is deployable
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          if [ "$REF_TYPE" != "branch" ] || [ "$REF_NAME" != "main" ]; then
+            echo "::error::Dispatched from $REF_TYPE '$REF_NAME'. This workflow only deploys the main branch; re-run it with main selected."
+            exit 1
+          fi
+
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.ref_name }}
+          # Pinned literally: the deployed code is always main, never the dispatch ref.
+          ref: main
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           registry-url: 'https://npm.pkg.github.com'
           scope: '@d3-inc'
 
-      - name: Create .env file
-        run: |
-          if [ "${GITHUB_REF_NAME}" = "main" ]; then
-            printf "%s" "${{ secrets.DOTENV_MAIN }}" > .env
-          else
-            printf "%s" "${{ secrets.DOTENV_OTHER }}" > .env
-          fi
-          ls -la .env
-        
       - name: Install dependencies
         run: npm install
 
       - name: Build project
         run: npm run build
-
-      - name: Select AWS region based on branch
-        run: |
-          if [ "${GITHUB_REF_NAME}" = "main" ]; then
-            echo "AWS_REGION=us-west-1" >> $GITHUB_ENV
-          else
-            echo "AWS_REGION=us-east-2" >> $GITHUB_ENV
-          fi
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -57,14 +72,29 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Show selected AWS region
-        run: echo "Deploying to region:" $AWS_REGION
+      - name: Resolve ACM certificate for ${{ env.API_DOMAIN_NAME }}
+        run: |
+          set -euo pipefail
+          ARN=$(aws acm list-certificates \
+            --region "$AWS_REGION" \
+            --certificate-statuses ISSUED \
+            --query "CertificateSummaryList[?DomainName=='${API_DOMAIN_NAME}'].CertificateArn | [0]" \
+            --output text)
+          if [ -z "$ARN" ] || [ "$ARN" = "None" ]; then
+            echo "::error::No ISSUED ACM certificate for ${API_DOMAIN_NAME} in ${AWS_REGION}."
+            echo "::error::The API is EDGE-optimized, so the certificate must live in us-east-1."
+            exit 1
+          fi
+          echo "Using certificate $ARN"
+          echo "API_CERTIFICATE_ARN=$ARN" >> "$GITHUB_ENV"
 
       - name: Install CDK CLI
-        run: npm install -g aws-cdk@2.1029.0
+        # Must be >= the aws-cdk-lib version's required CLI. aws-cdk-lib is pinned to 2.230.0
+        # (lowest release exposing Runtime.NODEJS_24_X); 2.1128.1 reads its cloud-assembly schema.
+        run: npm install -g aws-cdk@2.1128.1
 
       - name: Deploy CDK stack
-        run: cdk deploy RoutingAPIStack
+        run: cdk deploy RoutingAPIStack --require-approval never --ci
 
       - name: Slack notification
         uses: 8398a7/action-slack@v3
