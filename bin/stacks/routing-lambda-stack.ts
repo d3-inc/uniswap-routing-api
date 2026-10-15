@@ -13,6 +13,7 @@ import { Construct } from 'constructs'
 import * as path from 'path'
 import { DynamoDBTableProps } from './routing-database-stack'
 import { RetentionDays } from 'aws-cdk-lib/aws-logs'
+import { LAMBDA_EXTERNAL_MODULES } from '../../lib/util/lambdaBundling'
 
 export interface RoutingLambdaStackProps extends cdk.NestedStackProps {
   poolCacheBucket: aws_s3.Bucket
@@ -120,6 +121,7 @@ export class RoutingLambdaStack extends cdk.NestedStack {
       bundling: {
         minify: true,
         sourceMap: true,
+        externalModules: LAMBDA_EXTERNAL_MODULES,
       },
 
       description: 'Caching Routing Lambda',
@@ -188,6 +190,7 @@ export class RoutingLambdaStack extends cdk.NestedStack {
       bundling: {
         minify: true,
         sourceMap: true,
+        externalModules: LAMBDA_EXTERNAL_MODULES,
       },
 
       description: 'Routing Lambda',

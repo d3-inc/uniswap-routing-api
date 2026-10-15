@@ -18,6 +18,7 @@ import { chainProtocols } from '../../lib/cron/cache-config'
 import { STAGE } from '../../lib/util/stage'
 import { PoolCachingFilePrefixes } from '../../lib/util/poolCachingFilePrefixes'
 import { ChainId } from '@uniswap/sdk-core'
+import { LAMBDA_EXTERNAL_MODULES } from '../../lib/util/lambdaBundling'
 
 export interface RoutingCachingStackProps extends cdk.NestedStackProps {
   stage: string
@@ -361,6 +362,7 @@ export class RoutingCachingStack extends cdk.NestedStack {
           bundling: {
             minify: true,
             sourceMap: true,
+            externalModules: LAMBDA_EXTERNAL_MODULES,
           },
           description: `Pool Cache Lambda for Chain with ChainId ${chainId} and Protocol ${protocol}`,
           layers: poolCacheInsightsLayers,
@@ -491,6 +493,7 @@ export class RoutingCachingStack extends cdk.NestedStack {
       bundling: {
         minify: true,
         sourceMap: true,
+        externalModules: LAMBDA_EXTERNAL_MODULES,
       },
       layers: tokenListInsightsLayers,
       description: 'Token List Cache Lambda',
