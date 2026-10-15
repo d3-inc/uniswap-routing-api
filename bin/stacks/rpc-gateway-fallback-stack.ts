@@ -7,6 +7,7 @@ import { ComparisonOperator, MathExpression } from 'aws-cdk-lib/aws-cloudwatch'
 import { RetentionDays } from 'aws-cdk-lib/aws-logs'
 import { DynamoDBTableProps } from './routing-database-stack'
 import * as aws_dynamodb from 'aws-cdk-lib/aws-dynamodb'
+import { LAMBDA_EXTERNAL_MODULES } from '../../lib/util/lambdaBundling'
 
 export interface RpcGatewayFallbackStackPros extends cdk.NestedStackProps {
   rpcProviderHealthStateDynamoDb: aws_dynamodb.Table
@@ -54,6 +55,7 @@ export class RpcGatewayFallbackStack extends cdk.NestedStack {
       bundling: {
         minify: true,
         sourceMap: true,
+        externalModules: LAMBDA_EXTERNAL_MODULES,
       },
       layers: insightsLayers,
       tracing: tracingMode,
